@@ -8,6 +8,7 @@ import { apiError } from "../../services/apiClient";
 import { purchaseService, supplierService } from "../../services/erpService";
 import { kilos, mapById, money, rowsOf } from "../../utils/formatters";
 import { useToast } from "../../components/common/useToast";
+import { today } from "../../utils/dates";
 
 export function Purchases() {
   const suppliers = useQuery({
@@ -81,7 +82,7 @@ export function PurchaseForm() {
     purchaseRatePerKg: "",
     additionalCost: "",
     totalPaid: "",
-    purchaseDate: new Date().toISOString().slice(0, 10),
+    purchaseDate: today(),
     notes: "",
   });
 

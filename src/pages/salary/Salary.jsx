@@ -7,8 +7,8 @@ import { apiError } from "../../services/apiClient";
 import { salaryService } from "../../services/erpService";
 import { money, rowsOf } from "../../utils/formatters";
 import { useToast } from "../../components/common/useToast";
+import { today } from "../../utils/dates";
 
-const today = () => new Date().toISOString().slice(0, 10);
 const upcomingPartnerFeatureText =
   "Feature not implemented yet. Partner profit-share management will be released in a future version. For now, only employee salary tracking is available in this section.";
 

@@ -83,6 +83,13 @@ export default function Shell({ user, logout, routes }) {
           </button>
         </div>
       </aside>
+      {open && (
+        <button
+          className="sidebar-backdrop"
+          onClick={() => setOpen(false)}
+          aria-label="Close navigation"
+        />
+      )}
       <div className="content">
         <header className="topbar">
           <button

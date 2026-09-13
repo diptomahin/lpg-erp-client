@@ -17,10 +17,16 @@ export default function Login() {
   const mutation = useMutation({
     mutationFn: authService.login,
     onSuccess: (data) => {
+      if (!data?.token) {
+        setError("Login response did not include a valid token.");
+        return;
+      }
+
       localStorage.setItem("lpg_token", data.token);
-      localStorage.setItem("lpg_user", JSON.stringify(data.user));
+      localStorage.setItem("lpg_user", JSON.stringify(data.user || null));
+      window.dispatchEvent(new Event("storage"));
       showToast("Signed in successfully.");
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     },
     onError: (err) => setError(apiError(err)),
   });

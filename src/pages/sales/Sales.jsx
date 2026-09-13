@@ -14,6 +14,7 @@ import {
 import { kilos, mapById, money, rowsOf } from "../../utils/formatters";
 import { useToast } from "../../components/common/useToast";
 import { useReportSettings } from "../../utils/useReportSettings";
+import { today } from "../../utils/dates";
 
 export function Sales() {
   const customers = useQuery({
@@ -102,7 +103,7 @@ export function SaleForm() {
   const types = rowsOf(typesQuery.data);
   const [form, setForm] = useState({
     customer: "",
-    saleDate: new Date().toISOString().slice(0, 10),
+    saleDate: today(),
     discount: 0,
     totalPaid: 0,
   });

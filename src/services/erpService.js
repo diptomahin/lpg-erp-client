@@ -55,6 +55,10 @@ export const reportService = {
   supplierPayables: (params) => list("/reports/supplier-payables", params),
   expenses: (params) => list("/reports/expenses", params),
 };
+export const settingsService = {
+  authorizeTheoreticalProfit: (payload) =>
+    apiClient.post("/settings/theoretical-profit", payload).then(unwrap),
+};
 export const paymentService = {
   customerList: (params) => list("/customer-payments", params),
   customerCreate: (payload) =>

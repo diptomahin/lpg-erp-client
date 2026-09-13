@@ -21,7 +21,9 @@ export function DataState({ query, children }) {
 }
 
 export function DataTable({ query, columns, render, rows }) {
-  const tableRows = rows || rowsOf(query.data);
+  const sourceRows = rows !== undefined ? rows : query?.data;
+  const tableRows = rowsOf(sourceRows);
+
   return (
     <div className="table-wrap">
       <DataState query={query}>

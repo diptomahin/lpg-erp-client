@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Check, Eye, EyeOff, LockKeyhole } from "lucide-react";
 import PageHeader from "../../components/common/PageHeader";
 import { apiError } from "../../services/apiClient";
-import { authService } from "../../services/erpService";
+import { authService, settingsService } from "../../services/erpService";
 import { useToast } from "../../components/common/useToast";
 import {
   getReportSettings,
@@ -19,6 +19,10 @@ export default function Settings({ user }) {
     confirmPassword: "",
   });
   const [error, setError] = useState("");
+  const [profitPassword, setProfitPassword] = useState("");
+  const [showProfitPassword, setShowProfitPassword] = useState(false);
+  const [profitPasswordOpen, setProfitPasswordOpen] = useState(false);
+  const [profitError, setProfitError] = useState("");
   const passwordMutation = useMutation({
     mutationFn: authService.changePassword,
     onSuccess: () => {
@@ -29,13 +33,25 @@ export default function Settings({ user }) {
     onError: (requestError) => setError(apiError(requestError)),
   });
   const isAdmin = user?.role === "admin";
+  const theoreticalProfitMutation = useMutation({
+    mutationFn: settingsService.authorizeTheoreticalProfit,
+    onSuccess: ({ enabled }) => {
+      const next = { ...settings, showTheoreticalProfit: enabled };
+      setSettings(next);
+      setReportSettings(next);
+      window.dispatchEvent(new Event("report-settings-changed"));
+      setProfitPassword("");
+      setShowProfitPassword(false);
+      setProfitPasswordOpen(false);
+      setProfitError("");
+      showToast(`Theoretical profit ${enabled ? "shown" : "hidden"}.`);
+    },
+    onError: (requestError) => setProfitError(apiError(requestError)),
+  });
 
-  const updateVisibility = (value) => {
-    const next = { ...settings, showTheoreticalProfit: value };
-    setSettings(next);
-    setReportSettings(next);
-    window.dispatchEvent(new Event("report-settings-changed"));
-    showToast(`Theoretical profit ${value ? "shown" : "hidden"}.`);
+  const updateVisibility = () => {
+    setProfitError("");
+    setProfitPasswordOpen(true);
   };
 
   return (
@@ -67,9 +83,7 @@ export default function Settings({ user }) {
             <button
               type="button"
               className={`toggle ${settings.showTheoreticalProfit ? "active" : ""}`}
-              onClick={() =>
-                isAdmin && updateVisibility(!settings.showTheoreticalProfit)
-              }
+              onClick={() => isAdmin && updateVisibility()}
               disabled={!isAdmin}
               aria-pressed={settings.showTheoreticalProfit}
               title={
@@ -79,6 +93,58 @@ export default function Settings({ user }) {
               <span />
             </button>
           </div>
+          {isAdmin && profitPasswordOpen && (
+            <form
+              className="setting-confirm"
+              onSubmit={(event) => {
+                event.preventDefault();
+                theoreticalProfitMutation.mutate({
+                  password: profitPassword,
+                  enabled: !settings.showTheoreticalProfit,
+                });
+              }}
+            >
+              <label>
+                Admin password
+                <span className="password-field">
+                  <input
+                    type={showProfitPassword ? "text" : "password"}
+                    required
+                    autoFocus
+                    value={profitPassword}
+                    onChange={(event) => setProfitPassword(event.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="password-visibility"
+                    onClick={() => setShowProfitPassword((value) => !value)}
+                    aria-label={
+                      showProfitPassword ? "Hide password" : "Show password"
+                    }
+                    title={
+                      showProfitPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    {showProfitPassword ? (
+                      <EyeOff size={17} />
+                    ) : (
+                      <Eye size={17} />
+                    )}
+                  </button>
+                </span>
+              </label>
+              {profitError && <div className="form-error">{profitError}</div>}
+              <button
+                className="primary"
+                disabled={theoreticalProfitMutation.isPending}
+              >
+                <LockKeyhole size={16} />
+                {theoreticalProfitMutation.isPending
+                  ? "Checking..."
+                  : "Confirm change"}
+              </button>
+            </form>
+          )}
           {!isAdmin && (
             <p className="form-error">
               Only administrators can change report visibility.

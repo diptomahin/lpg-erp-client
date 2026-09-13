@@ -11,6 +11,7 @@ import {
 } from "../../services/erpService";
 import { mapById, money, rowsOf } from "../../utils/formatters";
 import { useToast } from "../../components/common/useToast";
+import { today } from "../../utils/dates";
 
 export default function Expenses() {
   const query = useQuery({
@@ -74,7 +75,7 @@ export function ExpenseForm() {
   const [form, setForm] = useState({
     category: "",
     amount: "",
-    expenseDate: new Date().toISOString().slice(0, 10),
+    expenseDate: today(),
     paymentMethod: "cash",
     description: "",
     notes: "",

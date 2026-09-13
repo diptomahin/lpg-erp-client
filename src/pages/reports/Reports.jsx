@@ -15,57 +15,302 @@ import {
   Warehouse,
 } from "lucide-react";
 import PageHeader from "../../components/common/PageHeader";
+import CylinderBreakdown from "../../components/common/CylinderBreakdown";
 import { DataState, DataTable } from "../../components/common/DataState";
 import { customerService, reportService } from "../../services/erpService";
-import { kilos, mapById, money } from "../../utils/formatters";
+import {
+  findMetricValue,
+  isEmptyReport,
+  kilos,
+  mapById,
+  money,
+  sumValues,
+} from "../../utils/formatters";
 import { useReportSettings } from "../../utils/useReportSettings";
+import { dateValue } from "../../utils/dates";
 
-const metricConfig = {
-  totalSales: ["Total sales", money, CircleDollarSign, "emerald", 84],
-  totalLpgSold: ["Total LPG sold", kilos, Scale, "cyan", 73],
-  totalCylindersSold: [
-    "Total cylinders sold",
-    (value) => `${Number(value || 0).toLocaleString()} units`,
-    Boxes,
-    "violet",
-    68,
-  ],
-  totalCustomerPayments: ["Customer payments", money, HandCoins, "green", 62],
-  totalSupplierPayments: ["Supplier payments", money, Banknote, "slate", 56],
-  totalExpenses: ["Total expenses", money, Receipt, "amber", 47],
-  totalSalaryPaid: ["Salary paid", money, HandCoins, "indigo", 54],
-  totalProfitSharePaid: ["Profit shares paid", money, HandCoins, "rose", 38],
-  grossProfit: ["Gross profit", money, TrendingUp, "emerald", 79],
-  operatingProfit: ["Operating profit", money, TrendingUp, "cyan", 66],
-  customerDue: ["Customer due", money, Wallet, "orange", 40],
-  supplierPayable: ["Supplier payable", money, Factory, "slate", 43],
-  currentLpgStock: ["Current LPG stock", kilos, Warehouse, "amber", 59],
-  totalLpgPurchased: ["Total LPG purchased", kilos, Scale, "violet", 71],
-  totalSalesRevenue: ["Sales revenue", money, CircleDollarSign, "emerald", 81],
-  totalCogs: ["Total COGS", money, Receipt, "red", 52],
-  customerPayments: ["Customer payments", money, HandCoins, "green", 60],
-  supplierPayments: ["Supplier payments", money, Banknote, "slate", 54],
-  closingLpgStock: ["Closing LPG stock", kilos, Warehouse, "amber", 62],
-  customerOutstanding: ["Customer outstanding", money, Wallet, "orange", 44],
-  supplierOutstanding: ["Supplier outstanding", money, Factory, "slate", 46],
+const buildMonthlyFallback = async (range) => {
+  const [
+    salesReport,
+    expensesReport,
+    customerDueReport,
+    supplierPayableReport,
+  ] = await Promise.all([
+    reportService.sales({ ...range, page: 1, limit: 200 }),
+    reportService.expenses({ ...range, page: 1, limit: 200 }),
+    reportService.customerDues({ ...range }),
+    reportService.supplierPayables({ ...range }),
+  ]);
+
+  const salesRows = Array.isArray(salesReport?.rows) ? salesReport.rows : [];
+  const expenseRows = Array.isArray(expensesReport?.rows)
+    ? expensesReport.rows
+    : [];
+  const customerDueRows = Array.isArray(customerDueReport?.rows)
+    ? customerDueReport.rows
+    : Array.isArray(customerDueReport)
+      ? customerDueReport
+      : [];
+  const supplierPayableRows = Array.isArray(supplierPayableReport?.rows)
+    ? supplierPayableReport.rows
+    : Array.isArray(supplierPayableReport)
+      ? supplierPayableReport
+      : [];
+
+  const totalLpgSold = sumValues(salesRows, (row) => row.totalLpgKg ?? 0);
+  const totalCylindersSold = sumValues(
+    salesRows,
+    (row) => row.totalCylinderCount ?? 0,
+  );
+  const totalSalesRevenue = sumValues(salesRows, (row) => row.totalAmount ?? 0);
+  const totalCogs = sumValues(salesRows, (row) => row.totalCost ?? 0);
+  const grossProfit = sumValues(
+    salesRows,
+    (row) =>
+      row.grossProfit ??
+      row.theoreticalProfit ??
+      Number(row.totalAmount ?? row.total ?? 0) - Number(row.totalCost ?? 0),
+  );
+  const totalExpenses = sumValues(expenseRows, (row) => row.amount ?? 0);
+  const customerOutstanding = sumValues(
+    customerDueRows,
+    (row) => row.outstanding ?? row.totalDue ?? row.customer?.totalDue ?? 0,
+  );
+  const supplierOutstanding = sumValues(
+    supplierPayableRows,
+    (row) => row.outstanding ?? row.totalDue ?? row.supplier?.totalDue ?? 0,
+  );
+
+  return {
+    totalLpgPurchased: 0,
+    totalLpgSold,
+    totalCylindersSold,
+    totalSalesRevenue,
+    totalCogs,
+    grossProfit,
+    totalExpenses,
+    customerPayments: 0,
+    supplierPayments: 0,
+    closingLpgStock: 0,
+    customerOutstanding,
+    supplierOutstanding,
+    totalSalaryPaid: 0,
+    totalProfitSharePaid: 0,
+    operatingProfit: grossProfit - totalExpenses,
+    cylinderBreakdown: [],
+  };
 };
 
-const dateValue = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+const metricConfig = [
+  {
+    id: "totalSales",
+    label: "Total sales",
+    icon: CircleDollarSign,
+    tone: "emerald",
+    progress: 84,
+    aliases: [
+      "totalSales",
+      "salesRevenue",
+      "totalSalesRevenue",
+      "salesTotal",
+      "totalRevenue",
+      "totalSalesTotal",
+    ],
+  },
+  {
+    id: "totalLpgSold",
+    label: "Total LPG sold",
+    icon: Scale,
+    tone: "cyan",
+    progress: 73,
+    aliases: [
+      "totalLpgSold",
+      "lpgSold",
+      "totalLpgSoldKg",
+      "lpgSoldKg",
+      "soldLpgKg",
+    ],
+  },
+  {
+    id: "totalCylindersSold",
+    label: "Total cylinders sold",
+    icon: Boxes,
+    tone: "violet",
+    progress: 68,
+    aliases: [
+      "totalCylindersSold",
+      "cylindersSold",
+      "totalCylinderSales",
+      "cylinderSales",
+    ],
+  },
+  {
+    id: "receivedInCash",
+    label: "Received in cash",
+    icon: HandCoins,
+    tone: "green",
+    progress: 64,
+    aliases: [
+      "receivedInCash",
+      "totalReceivedInCash",
+      "cashReceived",
+      "totalCashReceived",
+      "customerCashReceived",
+      "customerPaymentsCash",
+      "cashPaymentsReceived",
+      "cashCollected",
+      "totalCashCollected",
+    ],
+  },
+  {
+    id: "receivedInBank",
+    label: "Received in bank",
+    icon: Banknote,
+    tone: "slate",
+    progress: 60,
+    aliases: [
+      "receivedInBank",
+      "totalReceivedInBank",
+      "bankReceived",
+      "totalBankReceived",
+      "customerBankReceived",
+      "customerPaymentsBank",
+      "bankPaymentsReceived",
+      "bankCollected",
+      "totalBankCollected",
+    ],
+  },
+  {
+    id: "totalCustomerPayments",
+    label: "Customer payments",
+    icon: HandCoins,
+    tone: "green",
+    progress: 62,
+    aliases: [
+      "totalCustomerPayments",
+      "customerPayments",
+      "customerPaymentsTotal",
+    ],
+  },
+  {
+    id: "totalSupplierPayments",
+    label: "Supplier payments",
+    icon: Banknote,
+    tone: "slate",
+    progress: 56,
+    aliases: [
+      "totalSupplierPayments",
+      "supplierPayments",
+      "supplierPaymentsTotal",
+    ],
+  },
+  {
+    id: "totalExpenses",
+    label: "Total expenses",
+    icon: Receipt,
+    tone: "amber",
+    progress: 47,
+    aliases: ["totalExpenses", "expenses", "totalExpense", "expenseTotal"],
+  },
+  {
+    id: "totalSalaryPaid",
+    label: "Salary paid",
+    icon: HandCoins,
+    tone: "indigo",
+    progress: 54,
+    aliases: ["totalSalaryPaid", "salaryPaid", "totalSalary", "salaryPayments"],
+  },
+  {
+    id: "grossProfit",
+    label: "Gross profit",
+    icon: TrendingUp,
+    tone: "emerald",
+    progress: 79,
+    aliases: ["grossProfit", "profit", "totalGrossProfit", "grossProfitValue"],
+  },
+  {
+    id: "operatingProfit",
+    label: "Operating profit",
+    icon: TrendingUp,
+    tone: "cyan",
+    progress: 66,
+    aliases: ["operatingProfit", "totalOperatingProfit", "profitAfterExpenses"],
+  },
+  {
+    id: "customerDue",
+    label: "Customer due",
+    icon: Wallet,
+    tone: "orange",
+    progress: 40,
+    aliases: [
+      "customerDue",
+      "customerOutstanding",
+      "totalCustomerDue",
+      "receivables",
+      "customerOutstandingBalance",
+      "totalCustomerOutstanding",
+      "customerReceivables",
+    ],
+  },
+  {
+    id: "supplierPayable",
+    label: "Supplier payable",
+    icon: Factory,
+    tone: "slate",
+    progress: 43,
+    aliases: [
+      "supplierPayable",
+      "supplierOutstanding",
+      "totalSupplierPayable",
+      "payables",
+      "supplierOutstandingBalance",
+      "totalSupplierOutstanding",
+      "supplierPayables",
+    ],
+  },
+  {
+    id: "closingLpgStock",
+    label: "Closing LPG stock",
+    icon: Warehouse,
+    tone: "amber",
+    progress: 62,
+    aliases: [
+      "closingLpgStock",
+      "currentLpgStock",
+      "availableLpgKg",
+      "lpgInventoryKg",
+    ],
+  },
+];
+
+const formatMetricValue = (metricId, value) => {
+  if (metricId === "totalCylindersSold" || metricId === "totalCylindersSold") {
+    return `${Number(value || 0).toLocaleString()} units`;
+  }
+  if (
+    metricId === "totalLpgSold" ||
+    metricId === "currentLpgStock" ||
+    metricId === "closingLpgStock"
+  ) {
+    return kilos(value);
+  }
+  return money(value);
 };
 
 const monthValue = (date) => dateValue(date).slice(0, 7);
 
-const reportRange = (mode, date, month) => {
+const reportRange = (mode, selectedDate, selectedMonth) => {
+  const currentDate = selectedDate || dateValue(new Date());
+  const currentMonth = selectedMonth || monthValue(new Date());
+
   if (mode === "monthly") {
-    const [year, monthNumber] = month.split("-").map(Number);
-    const lastDay = new Date(year, monthNumber, 0);
-    return { from: `${month}-01`, to: dateValue(lastDay) };
+    const [year, rawMonth] = currentMonth.split("-").map(Number);
+    const monthIndex = rawMonth - 1;
+    const lastDay = new Date(year, monthIndex + 1, 0);
+    return { from: `${currentMonth}-01`, to: dateValue(lastDay) };
   }
-  return { from: date, to: date };
+
+  return { from: currentDate, to: currentDate };
 };
 
 export default function Reports() {
@@ -75,28 +320,59 @@ export default function Reports() {
   const [date, setDate] = useState(dateValue(now));
   const [month, setMonth] = useState(monthValue(now));
   const range = reportRange(mode, date, month);
+  const rangeKey = `${mode}-${range.from}-${range.to}`;
+
   const query = useQuery({
     queryKey: ["report", mode, range.from, range.to],
-    queryFn: () =>
-      mode === "monthly"
-        ? reportService.monthly(range)
-        : reportService.daily(range),
+    queryFn: async () => {
+      if (mode === "monthly") {
+        const payload = await reportService.monthly(range);
+        if (!isEmptyReport(payload)) return payload || {};
+        return buildMonthlyFallback(range);
+      }
+
+      return (await reportService.daily(range)) || {};
+    },
+    enabled: Boolean(range.from && range.to),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
+
   const sales = useQuery({
     queryKey: ["sales-report", range.from, range.to],
-    queryFn: () => reportService.sales({ ...range, page: 1, limit: 50 }),
+    queryFn: async () => {
+      const payload = await reportService.sales({
+        ...range,
+        page: 1,
+        limit: 50,
+      });
+      return payload || [];
+    },
+    enabled: Boolean(range.from && range.to),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
+
   const customers = useQuery({
     queryKey: ["customers"],
     queryFn: () => customerService.list({ limit: 1000 }),
   });
+
   const customerMap = mapById(customers.data);
+
   return (
     <>
       <PageHeader
         title="Reports"
         description="Daily operational and financial reporting from authoritative records."
       />
+
       <div className="report-toolbar">
         <label>
           Report period
@@ -108,6 +384,7 @@ export default function Reports() {
             <option value="monthly">Monthly report</option>
           </select>
         </label>
+
         <label>
           <span>{mode === "monthly" ? "Month" : "Date"}</span>
           <span className="report-input">
@@ -124,28 +401,30 @@ export default function Reports() {
           </span>
         </label>
       </div>
+
       <DataState query={query}>
-        <div className="metric-grid">
-          {Object.entries(query.data || {})
-            .filter(([, value]) => typeof value === "number")
-            .map(([key, value]) => {
-              const [label, format, Icon, tone = "emerald", progress = 55] =
-                metricConfig[key] || [
-                  key.replace(/[A-Z]/g, (letter) => ` ${letter}`).trim(),
-                  money,
-                  CircleDollarSign,
-                  "emerald",
-                  55,
-                ];
+        <div className="metric-grid" key={rangeKey}>
+          {metricConfig
+            .filter(
+              ({ id }) =>
+                showTheoreticalProfit ||
+                !["grossProfit", "operatingProfit"].includes(id),
+            )
+            .map(({ id, label, icon: Icon, tone, progress, aliases }) => {
+              const value = findMetricValue(query.data || {}, aliases);
               return (
-                <div className="metric metric-tone" data-tone={tone} key={key}>
+                <div
+                  className="metric metric-tone"
+                  data-tone={tone}
+                  key={`${id}-${rangeKey}`}
+                >
                   <div className="metric-head">
                     <span>{label}</span>
                     <span className="metric-icon" aria-hidden="true">
                       <Icon size={17} />
                     </span>
                   </div>
-                  <strong>{format(value)}</strong>
+                  <strong>{formatMetricValue(id, value)}</strong>
                   <div className="metric-progress" aria-hidden="true">
                     <span style={{ width: `${progress}%` }} />
                   </div>
@@ -154,13 +433,19 @@ export default function Reports() {
             })}
         </div>
       </DataState>
+
+      <CylinderBreakdown items={query.data?.cylinderBreakdown} />
+
       <div className="section-heading">
         <div>
           <p className="eyebrow">Sales profitability</p>
           <h2>Sales by transaction</h2>
         </div>
-        <span className="muted">Theoretical profit from completed sales</span>
+        {showTheoreticalProfit && (
+          <span className="muted">Theoretical profit from completed sales</span>
+        )}
       </div>
+
       <DataTable
         query={sales}
         columns={[
@@ -178,6 +463,7 @@ export default function Reports() {
             row.customer && typeof row.customer === "object"
               ? row.customer
               : customerMap[String(row.customer)] || {};
+
           const totalLpgKg = Number(row.totalLpgKg || 0);
           const totalCost = Number(row.totalCost || 0);
           const totalAmount = Number(row.totalAmount || 0);
@@ -188,6 +474,7 @@ export default function Reports() {
             (totalLpgKg ? totalAmount / totalLpgKg : 0);
           const theoreticalProfit =
             row.theoreticalProfit ?? row.grossProfit ?? totalAmount - totalCost;
+
           return (
             <tr key={row._id || row.id}>
               <td className="strong">

@@ -13,6 +13,7 @@ import {
 } from "../../services/erpService";
 import { money, rowsOf } from "../../utils/formatters";
 import { useToast } from "../../components/common/useToast";
+import { today } from "../../utils/dates";
 
 export default function Payments({ type }) {
   const customer = type === "customer";
@@ -43,7 +44,7 @@ export default function Payments({ type }) {
     account: supplierId || "",
     transaction: "",
     amount: "",
-    paymentDate: new Date().toISOString().slice(0, 10),
+    paymentDate: today(),
     paymentMethod: "cash",
     reference: "",
     notes: "",
@@ -56,7 +57,7 @@ export default function Payments({ type }) {
         account: "",
         transaction: "",
         amount: "",
-        paymentDate: new Date().toISOString().slice(0, 10),
+        paymentDate: today(),
         paymentMethod: "cash",
         reference: "",
         notes: "",
