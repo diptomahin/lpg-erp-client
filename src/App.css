@@ -1192,6 +1192,9 @@ select {
   .cylinder-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
   .sale-layout,
   .detail-grid,
   .payment-layout {
@@ -1264,6 +1267,35 @@ select {
   .page-header .primary,
   .page-header .secondary {
     align-self: stretch;
+    justify-content: center;
+  }
+  .settings-grid {
+    gap: 12px;
+  }
+  .settings-panel {
+    padding: 18px;
+  }
+  .settings-panel .panel-title {
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .settings-panel .panel-title h2 {
+    font-size: 20px;
+  }
+  .setting-row {
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .setting-row > div {
+    min-width: 0;
+  }
+  .setting-row strong,
+  .setting-row p {
+    overflow-wrap: anywhere;
+  }
+  .setting-confirm .primary,
+  .settings-panel form > .primary {
+    width: 100%;
     justify-content: center;
   }
   .metric-grid {
