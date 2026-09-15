@@ -24,7 +24,9 @@ export function Customers() {
       columns={["Name", "Company", "Phone", "Receivable", "Status", ""]}
       render={(row) => (
         <tr key={row._id || row.id}>
-          <td className="strong">{row.name}</td>
+          <td className="strong">
+            <Link to={`/customers/${row._id || row.id}`}>{row.name}</Link>
+          </td>
           <td>{row.companyName || "-"}</td>
           <td>{row.phone || "-"}</td>
           <td className="strong">

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { apiError } from "../../services/apiClient";
 import { authService } from "../../services/erpService";
@@ -14,6 +14,7 @@ export default function Login() {
     password: "",
   });
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const mutation = useMutation({
     mutationFn: authService.login,
     onSuccess: (data) => {
@@ -61,14 +62,25 @@ export default function Login() {
           </label>
           <label>
             Password
-            <input
-              type="password"
-              value={form.password}
-              onChange={(event) =>
-                setForm({ ...form, password: event.target.value })
-              }
-              required
-            />
+            <span className="password-field">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={(event) =>
+                  setForm({ ...form, password: event.target.value })
+                }
+                required
+              />
+              <button
+                type="button"
+                className="password-visibility"
+                onClick={() => setShowPassword((value) => !value)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+              </button>
+            </span>
           </label>
           {error && <div className="form-error">{error}</div>}
           <button className="primary full" disabled={mutation.isPending}>

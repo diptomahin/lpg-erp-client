@@ -324,6 +324,9 @@ export function SaleForm() {
                   setForm({ ...form, totalPaid: event.target.value })
                 }
               />
+              <span className="amount-preview">
+                {money(Number(form.totalPaid || 0))}
+              </span>
             </label>
           </div>
           {error && <div className="form-error">{error}</div>}

@@ -18,6 +18,8 @@ export const dashboardService = {
 export const customerService = {
   list: (params) => list("/customers", params),
   get: (id) => detail(`/customers/${id}`),
+  overview: (id) => detail(`/customers/${id}/overview`),
+  dues: () => detail("/dues"),
   create: (payload) => apiClient.post("/customers", payload).then(unwrap),
   update: (id, payload) =>
     apiClient.put(`/customers/${id}`, payload).then(unwrap),

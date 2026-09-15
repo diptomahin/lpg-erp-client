@@ -2,6 +2,7 @@ import { apiError } from "../../services/apiClient";
 import { rowsOf } from "../../utils/formatters";
 
 export function DataState({ query, children }) {
+  if (!query) return children;
   if (query.isPending) return <div className="state">Loading records...</div>;
   if (query.isError)
     return (

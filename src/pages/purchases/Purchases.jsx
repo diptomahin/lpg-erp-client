@@ -212,6 +212,9 @@ export function PurchaseForm() {
                 setForm({ ...form, additionalCost: event.target.value })
               }
             />
+            <span className="amount-preview">
+              {money(Number(form.additionalCost || 0))}
+            </span>
           </label>
 
           <label>
@@ -225,6 +228,9 @@ export function PurchaseForm() {
                 setForm({ ...form, totalPaid: event.target.value })
               }
             />
+            <span className="amount-preview">
+              {money(Number(form.totalPaid || 0))}
+            </span>
           </label>
         </div>
 

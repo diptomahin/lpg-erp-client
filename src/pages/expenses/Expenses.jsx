@@ -159,6 +159,9 @@ export function ExpenseForm() {
                 setForm({ ...form, amount: event.target.value })
               }
             />
+            <span className="amount-preview">
+              {money(Number(form.amount || 0))}
+            </span>
           </label>
           <label>
             Expense date

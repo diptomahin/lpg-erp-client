@@ -14,6 +14,7 @@ import {
   Settings,
   Truck,
   Users,
+  WalletCards,
   X,
 } from "lucide-react";
 
@@ -22,6 +23,7 @@ const navigation = [
   { label: "Sales", icon: Receipt, to: "/sales" },
   { label: "Purchases", icon: Truck, to: "/purchases" },
   { label: "Customers", icon: Users, to: "/customers" },
+  { label: "Dues", icon: WalletCards, to: "/dues" },
   { label: "Suppliers", icon: Factory, to: "/suppliers" },
   { label: "Inventory", icon: Boxes, to: "/inventory" },
   { label: "Payments", icon: CircleDollarSign, to: "/payments/customer" },

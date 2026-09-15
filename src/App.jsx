@@ -5,6 +5,8 @@ import Login from "./pages/auth/Login";
 import Dashboard from "./pages/Dashboard";
 import Shell from "./layouts/Shell";
 import { Customers, CustomerForm } from "./pages/customers/Customers";
+import CustomerOverview from "./pages/customers/CustomerOverview";
+import Dues from "./pages/customers/Dues";
 import Suppliers, { SupplierForm } from "./pages/suppliers/Suppliers";
 import { Purchases, PurchaseForm } from "./pages/purchases/Purchases";
 import { Sales, SaleForm, SaleDetail } from "./pages/sales/Sales";
@@ -63,7 +65,9 @@ function ProtectedRoute() {
           <Route path="/sales/:id" element={<SaleDetail />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/customers/new" element={<CustomerForm />} />
+          <Route path="/customers/:id" element={<CustomerOverview />} />
           <Route path="/customers/:id/edit" element={<CustomerForm />} />
+          <Route path="/dues" element={<Dues />} />
           <Route path="/suppliers" element={<Suppliers />} />
           <Route path="/suppliers/new" element={<SupplierForm />} />
           <Route path="/suppliers/:id/edit" element={<SupplierForm />} />

@@ -337,6 +337,9 @@ export default function Salary({ user }) {
                       })
                     }
                   />
+                  <span className="amount-preview">
+                    {money(Number(personForm.monthlySalary || 0))}
+                  </span>
                 </label>
                 <label>
                   Notes
@@ -528,6 +531,9 @@ function PayoutForm({
               setForm({ ...form, amount: event.target.value })
             }
           />
+          <span className="amount-preview">
+            {money(Number(form.amount || 0))}
+          </span>
         </label>
         <label>
           Period
