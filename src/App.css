@@ -738,6 +738,43 @@ td a {
   color: var(--green);
   font-size: 16px;
 }
+.customer-balance-callout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0 20px;
+  padding: 14px;
+  border: 1px solid #cee0d4;
+  border-radius: 5px;
+  background: #f0f7f2;
+}
+.customer-balance-callout div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.customer-balance-callout span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.customer-balance-callout strong {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.customer-balance-projection {
+  grid-column: 1 / -1;
+  padding-top: 10px;
+  border-top: 1px solid #cee0d4;
+}
+.balance-due {
+  color: var(--red);
+}
+.balance-clear {
+  color: var(--green);
+}
+.balance-advance {
+  color: var(--red);
+}
 textarea {
   min-height: 82px;
   resize: vertical;
@@ -948,6 +985,11 @@ select {
 }
 .customer-summary-grid strong {
   font-size: 22px;
+}
+.advance-amount,
+.advance-summary strong {
+  color: var(--red);
+  font-weight: 800;
 }
 .customer-info {
   display: grid;
@@ -1399,6 +1441,12 @@ select {
   }
   .form-grid {
     grid-template-columns: 1fr;
+  }
+  .customer-balance-callout {
+    grid-template-columns: 1fr;
+  }
+  .customer-balance-projection {
+    grid-column: auto;
   }
   .form-panel,
   .summary-panel {

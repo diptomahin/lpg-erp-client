@@ -21,7 +21,15 @@ export function Customers() {
           <Plus size={17} /> Add customer
         </Link>
       }
-      columns={["Name", "Company", "Phone", "Receivable", "Status", ""]}
+      columns={[
+        "Name",
+        "Company",
+        "Phone",
+        "Receivable",
+        "Advance",
+        "Status",
+        "",
+      ]}
       render={(row) => (
         <tr key={row._id || row.id}>
           <td className="strong">
@@ -31,6 +39,11 @@ export function Customers() {
           <td>{row.phone || "-"}</td>
           <td className="strong">
             {money(row.totalDue ?? row.existingReceivable ?? 0)}
+          </td>
+          <td className="advance-amount">
+            {Number(row.advanceBalance || 0) > 0
+              ? `-${money(row.advanceBalance)}`
+              : "-"}
           </td>
           <td>
             <span className="badge success">{row.status || "ACTIVE"}</span>

@@ -142,6 +142,22 @@ export function SaleForm() {
       Number(item.cylinderCount || 0) * Number(item.pricePerCylinder || 0),
     0,
   );
+  const selectedCustomer = rowsOf(clients.data).find(
+    (customer) => String(customer._id || customer.id) === String(form.customer),
+  );
+  const currentDue = Number(selectedCustomer?.totalDue || 0);
+  const currentAdvance = Number(selectedCustomer?.advanceBalance || 0);
+  const saleTotal = Math.max(0, subtotal - Number(form.discount || 0));
+  const initialPayment = Number(form.totalPaid || 0);
+  const projectedAdvance = Math.max(
+    0,
+    currentAdvance - Math.max(0, saleTotal - initialPayment),
+  );
+  const appliedAdvance = currentAdvance - projectedAdvance;
+  const projectedDue = Math.max(
+    0,
+    currentDue + saleTotal - initialPayment - appliedAdvance,
+  );
   const update = (index, patch) =>
     setItems(
       items.map((item, rowIndex) =>
@@ -214,6 +230,33 @@ export function SaleForm() {
               ))}
             </select>
           </label>
+          {selectedCustomer && (
+            <div className="customer-balance-callout">
+              <div>
+                <span>Current due</span>
+                <strong
+                  className={currentDue > 0 ? "balance-due" : "balance-clear"}
+                >
+                  {money(currentDue)}
+                </strong>
+              </div>
+              <div>
+                <span>Current advance</span>
+                <strong className="balance-advance">
+                  {currentAdvance > 0 ? `-${money(currentAdvance)}` : "-"}
+                </strong>
+              </div>
+              <div className="customer-balance-projection">
+                <span>After this sale</span>
+                <strong>
+                  Due {money(projectedDue)}
+                  {projectedAdvance > 0
+                    ? ` · Advance -${money(projectedAdvance)}`
+                    : ""}
+                </strong>
+              </div>
+            </div>
+          )}
           <div className="cylinder-list">
             {selected.map((item, index) => (
               <div className="cylinder-row" key={index}>

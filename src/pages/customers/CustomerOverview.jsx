@@ -63,6 +63,14 @@ export default function CustomerOverview() {
           <span>Total paid</span>
           <strong>{money(totals.paid)}</strong>
         </div>
+        <div className="summary-panel advance-summary">
+          <span>Available advance</span>
+          <strong>
+            {Number(customer?.advanceBalance || 0) > 0
+              ? `-${money(customer.advanceBalance)}`
+              : "-"}
+          </strong>
+        </div>
       </div>
 
       <section className="form-panel customer-info">
@@ -131,7 +139,17 @@ export default function CustomerOverview() {
             <td>{payment.paymentNumber || "-"}</td>
             <td>{payment.sale?.invoiceNumber || "General payment"}</td>
             <td>{payment.paymentMethod || "cash"}</td>
-            <td className="strong">{money(payment.amount)}</td>
+            <td
+              className={
+                payment.paymentType === "advance"
+                  ? "strong advance-amount"
+                  : "strong"
+              }
+            >
+              {payment.paymentType === "advance"
+                ? `-${money(payment.amount)}`
+                : money(payment.amount)}
+            </td>
           </tr>
         )}
       />

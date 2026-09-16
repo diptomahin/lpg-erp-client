@@ -20,6 +20,7 @@ export const customerService = {
   get: (id) => detail(`/customers/${id}`),
   overview: (id) => detail(`/customers/${id}/overview`),
   dues: () => detail("/dues"),
+  advances: () => detail("/advances"),
   create: (payload) => apiClient.post("/customers", payload).then(unwrap),
   update: (id, payload) =>
     apiClient.put(`/customers/${id}`, payload).then(unwrap),
