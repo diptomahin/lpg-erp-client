@@ -26,6 +26,7 @@ const navigation = [
   { label: "Dues", icon: WalletCards, to: "/dues" },
   { label: "Advances", icon: WalletCards, to: "/advances" },
   { label: "Suppliers", icon: Factory, to: "/suppliers" },
+  { label: "Supplier advances", icon: WalletCards, to: "/supplier-advances" },
   { label: "Inventory", icon: Boxes, to: "/inventory" },
   { label: "Payments", icon: CircleDollarSign, to: "/payments/customer" },
   { label: "Expenses", icon: ReceiptText, to: "/expenses" },

@@ -9,6 +9,8 @@ import CustomerOverview from "./pages/customers/CustomerOverview";
 import Dues from "./pages/customers/Dues";
 import Advances from "./pages/customers/Advances";
 import Suppliers, { SupplierForm } from "./pages/suppliers/Suppliers";
+import SupplierAdvances from "./pages/suppliers/SupplierAdvances";
+import SupplierOverview from "./pages/suppliers/SupplierOverview";
 import { Purchases, PurchaseForm } from "./pages/purchases/Purchases";
 import { Sales, SaleForm, SaleDetail } from "./pages/sales/Sales";
 import Inventory, { InventoryBatchDetail } from "./pages/inventory/Inventory";
@@ -70,8 +72,10 @@ function ProtectedRoute() {
           <Route path="/customers/:id/edit" element={<CustomerForm />} />
           <Route path="/dues" element={<Dues />} />
           <Route path="/advances" element={<Advances />} />
+          <Route path="/supplier-advances" element={<SupplierAdvances />} />
           <Route path="/suppliers" element={<Suppliers />} />
           <Route path="/suppliers/new" element={<SupplierForm />} />
+          <Route path="/suppliers/:id" element={<SupplierOverview />} />
           <Route path="/suppliers/:id/edit" element={<SupplierForm />} />
           <Route
             path="/suppliers/:supplierId/payments"

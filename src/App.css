@@ -769,6 +769,9 @@ td a {
 .balance-due {
   color: var(--red);
 }
+.balance-payable {
+  color: var(--red);
+}
 .balance-clear {
   color: var(--green);
 }
@@ -989,6 +992,14 @@ select {
 .advance-amount,
 .advance-summary strong {
   color: var(--red);
+  font-weight: 800;
+}
+.supplier-advance-amount {
+  color: #0b5d3b;
+  font-weight: 800;
+}
+.supplier-advance-summary strong {
+  color: #0b5d3b;
   font-weight: 800;
 }
 .customer-info {

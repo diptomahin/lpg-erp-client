@@ -21,14 +21,21 @@ export default function Suppliers() {
           <Plus size={17} /> Add supplier
         </Link>
       }
-      columns={["Name", "Company", "Phone", "Payable", "Status", ""]}
+      columns={["Name", "Company", "Phone", "Payable", "Advance", "Status", ""]}
       render={(row) => (
         <tr key={row._id || row.id}>
-          <td className="strong">{row.name}</td>
+          <td className="strong">
+            <Link to={`/suppliers/${row._id || row.id}`}>{row.name}</Link>
+          </td>
           <td>{row.companyName || "-"}</td>
           <td>{row.phone || "-"}</td>
           <td className="strong">
             {money(row.existingPayable ?? row.totalDue ?? 0)}
+          </td>
+          <td className="supplier-advance-amount">
+            {Number(row.advanceBalance || 0) > 0
+              ? `+${money(row.advanceBalance)}`
+              : "-"}
           </td>
           <td>
             <span className="badge success">{row.status || "ACTIVE"}</span>

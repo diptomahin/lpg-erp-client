@@ -28,6 +28,8 @@ export const customerService = {
 export const supplierService = {
   list: (params) => list("/suppliers", params),
   get: (id) => detail(`/suppliers/${id}`),
+  overview: (id) => detail(`/suppliers/${id}/overview`),
+  advances: () => detail("/supplier-advances"),
   create: (payload) => apiClient.post("/suppliers", payload).then(unwrap),
   update: (id, payload) =>
     apiClient.put(`/suppliers/${id}`, payload).then(unwrap),

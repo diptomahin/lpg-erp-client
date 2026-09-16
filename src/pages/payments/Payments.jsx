@@ -111,7 +111,7 @@ export default function Payments({ type }) {
       amount: Number(form.amount),
       paymentDate: form.paymentDate,
       paymentMethod: form.paymentMethod,
-      ...(customer ? { paymentType: form.paymentType } : {}),
+      paymentType: form.paymentType,
       reference: form.reference.trim(),
       notes: form.notes.trim(),
     };
@@ -177,44 +177,44 @@ export default function Payments({ type }) {
                     0,
                 )}
               </strong>
-              {customer && Number(selectedAccount.advanceBalance || 0) > 0 && (
+              {Number(selectedAccount.advanceBalance || 0) > 0 && (
                 <small>
-                  Available advance: {money(selectedAccount.advanceBalance)}
+                  Available advance: +{money(selectedAccount.advanceBalance)}
                 </small>
               )}
             </div>
           )}
-          {customer && (
-            <label>
-              Payment purpose
-              <select
-                value={form.paymentType}
-                onChange={(event) =>
-                  setForm({
-                    ...form,
-                    paymentType: event.target.value,
-                    transaction: "",
-                  })
-                }
+          <label>
+            Payment purpose
+            <select
+              value={form.paymentType}
+              onChange={(event) =>
+                setForm({
+                  ...form,
+                  paymentType: event.target.value,
+                  transaction: "",
+                })
+              }
+            >
+              <option value="sale">
+                {customer ? "Collect current due" : "Pay current payable"}
+              </option>
+              <option
+                value="advance"
+                disabled={Number(selectedAccount?.totalDue || 0) > 0}
               >
-                <option value="sale">Collect current due</option>
-                <option
-                  value="advance"
-                  disabled={Number(selectedAccount?.totalDue || 0) > 0}
-                >
-                  Advance for future sales
-                  {Number(selectedAccount?.totalDue || 0) > 0
-                    ? " (clear due first)"
-                    : ""}
-                </option>
-              </select>
-            </label>
-          )}
+                Advance for future {customer ? "sales" : "purchases"}
+                {Number(selectedAccount?.totalDue || 0) > 0
+                  ? " (clear balance first)"
+                  : ""}
+              </option>
+            </select>
+          </label>
           <label>
             Link to {customer ? "sale" : "purchase"} (optional)
             <select
               value={form.transaction}
-              disabled={customer && form.paymentType === "advance"}
+              disabled={form.paymentType === "advance"}
               onChange={(event) =>
                 setForm({ ...form, transaction: event.target.value })
               }

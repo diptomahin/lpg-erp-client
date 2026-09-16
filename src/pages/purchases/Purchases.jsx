@@ -108,6 +108,23 @@ export function PurchaseForm() {
   const total =
     quantityKg * Number(form.purchaseRatePerKg || 0) +
     Number(form.additionalCost || 0);
+  const selectedSupplier = rowsOf(suppliers.data).find(
+    (supplier) => String(supplier._id || supplier.id) === String(form.supplier),
+  );
+  const currentPayable = Number(
+    selectedSupplier?.totalDue ?? selectedSupplier?.existingPayable ?? 0,
+  );
+  const currentAdvance = Number(selectedSupplier?.advanceBalance || 0);
+  const initialPayment = Number(form.totalPaid || 0);
+  const projectedAdvance = Math.max(
+    0,
+    currentAdvance - Math.max(0, total - initialPayment),
+  );
+  const appliedAdvance = currentAdvance - projectedAdvance;
+  const projectedPayable = Math.max(
+    0,
+    currentPayable + total - initialPayment - appliedAdvance,
+  );
 
   const submitPayload = {
     supplier: form.supplier,
@@ -153,6 +170,35 @@ export function PurchaseForm() {
             ))}
           </select>
         </label>
+        {selectedSupplier && (
+          <div className="customer-balance-callout">
+            <div>
+              <span>Current payable</span>
+              <strong
+                className={
+                  currentPayable > 0 ? "balance-payable" : "balance-clear"
+                }
+              >
+                {money(currentPayable)}
+              </strong>
+            </div>
+            <div>
+              <span>Current advance</span>
+              <strong className="supplier-advance-amount">
+                {currentAdvance > 0 ? `+${money(currentAdvance)}` : "-"}
+              </strong>
+            </div>
+            <div className="customer-balance-projection">
+              <span>After this purchase</span>
+              <strong>
+                Payable {money(projectedPayable)}
+                {projectedAdvance > 0
+                  ? ` · Advance +${money(projectedAdvance)}`
+                  : ""}
+              </strong>
+            </div>
+          </div>
+        )}
 
         <div className="form-grid">
           <label>
