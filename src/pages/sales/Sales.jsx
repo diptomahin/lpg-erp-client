@@ -106,6 +106,7 @@ export function SaleForm() {
     saleDate: today(),
     discount: 0,
     totalPaid: 0,
+    paymentMethod: "cash",
   });
   const [items, setItems] = useState([
     { cylinderType: "", cylinderCount: 1, pricePerCylinder: "" },
@@ -185,6 +186,7 @@ export function SaleForm() {
             saleDate: form.saleDate,
             discount: Number(form.discount || 0),
             totalPaid: Number(form.totalPaid || 0),
+            paymentMethod: form.paymentMethod,
             items: items.map(
               ({ cylinderType, cylinderCount, pricePerCylinder }) => {
                 const type = types.find(
@@ -370,6 +372,20 @@ export function SaleForm() {
               <span className="amount-preview">
                 {money(Number(form.totalPaid || 0))}
               </span>
+            </label>
+            <label>
+              Payment method
+              <select
+                value={form.paymentMethod}
+                onChange={(event) =>
+                  setForm({ ...form, paymentMethod: event.target.value })
+                }
+              >
+                <option value="cash">Cash</option>
+                <option value="bank_transfer">Bank transfer</option>
+                <option value="mobile_money">Mobile money</option>
+                <option value="cheque">Cheque</option>
+              </select>
             </label>
           </div>
           {error && <div className="form-error">{error}</div>}
