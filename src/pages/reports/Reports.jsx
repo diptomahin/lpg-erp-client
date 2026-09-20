@@ -480,7 +480,7 @@ export default function Reports() {
           "Date",
           "Customer",
           "LPG",
-          "Purchase / KG",
+          ...(showTheoreticalProfit ? ["Purchase / KG"] : []),
           "Selling / KG",
           ...(showTheoreticalProfit ? ["Theoretical profit"] : []),
           "Payment",
@@ -516,7 +516,7 @@ export default function Reports() {
               </td>
               <td>{customer.name || row.customerName || "-"}</td>
               <td>{kilos(totalLpgKg)}</td>
-              <td>{money(purchasePricePerKg)}</td>
+              {showTheoreticalProfit && <td>{money(purchasePricePerKg)}</td>}
               <td>{money(sellingPricePerKg)}</td>
               {showTheoreticalProfit && (
                 <td className="strong">{money(theoreticalProfit)}</td>

@@ -5,8 +5,10 @@ import PageHeader from "../../components/common/PageHeader";
 import { DataState, DataTable } from "../../components/common/DataState";
 import { inventoryService } from "../../services/erpService";
 import { kilos, money } from "../../utils/formatters";
+import { useReportSettings } from "../../utils/useReportSettings";
 
 export default function Inventory() {
+  const { showTheoreticalProfit } = useReportSettings();
   const query = useQuery({
     queryKey: ["inventory"],
     queryFn: inventoryService.get,
@@ -33,7 +35,7 @@ export default function Inventory() {
           "Purchase date",
           "Original KG",
           "Remaining KG",
-          "Cost / KG",
+          ...(showTheoreticalProfit ? ["Cost / KG"] : []),
           "Status",
         ]}
         render={(row) => (
@@ -54,7 +56,9 @@ export default function Inventory() {
             </td>
             <td>{kilos(row.originalKg || row.originalQuantityKg)}</td>
             <td>{kilos(row.remainingKg || row.remainingQuantityKg)}</td>
-            <td>{money(row.costPerKg || row.acquisitionCostPerKg)}</td>
+            {showTheoreticalProfit && (
+              <td>{money(row.costPerKg || row.acquisitionCostPerKg)}</td>
+            )}
             <td>
               <span className="badge success">{row.status || "AVAILABLE"}</span>
             </td>
@@ -66,6 +70,7 @@ export default function Inventory() {
 }
 
 export function InventoryBatchDetail() {
+  const { showTheoreticalProfit } = useReportSettings();
   const id = useLocation().pathname.split("/").pop();
   const query = useQuery({
     queryKey: ["inventory-batch", id],
@@ -80,7 +85,11 @@ export function InventoryBatchDetail() {
     <>
       <PageHeader
         title={batch.batchNumber || "Batch history"}
-        description="Purchase origin, FIFO sales, and realized batch profit."
+        description={
+          showTheoreticalProfit
+            ? "Purchase origin, FIFO sales, and realized batch profit."
+            : "Purchase origin and FIFO sales."
+        }
         action={
           <Link className="secondary" to="/inventory">
             Back to inventory
@@ -101,10 +110,12 @@ export function InventoryBatchDetail() {
             <span>Sold quantity</span>
             <strong>{kilos(totals.soldKg)}</strong>
           </div>
-          <div className="metric">
-            <span>Realized profit</span>
-            <strong>{money(totals.realizedProfit)}</strong>
-          </div>
+          {showTheoreticalProfit && (
+            <div className="metric">
+              <span>Realized profit</span>
+              <strong>{money(totals.realizedProfit)}</strong>
+            </div>
+          )}
         </div>
         <div className="detail-grid batch-detail-grid">
           <section className="form-panel">
@@ -115,6 +126,18 @@ export function InventoryBatchDetail() {
               </div>
             </div>
             <div className="summary-line">
+              <span>Purchase code</span>
+              <strong>
+                {batch.purchase?._id ? (
+                  <Link to={`/purchases/${batch.purchase._id}`}>
+                    {batch.purchase.purchaseNumber || "View purchase"}
+                  </Link>
+                ) : (
+                  batch.purchase?.purchaseNumber || "-"
+                )}
+              </strong>
+            </div>
+            <div className="summary-line">
               <span>Purchase date</span>
               <strong>
                 {batch.batchDate
@@ -122,22 +145,28 @@ export function InventoryBatchDetail() {
                   : "-"}
               </strong>
             </div>
-            <div className="summary-line">
-              <span>Purchase cost / KG</span>
-              <strong>{money(batch.purchaseCostPerKg)}</strong>
-            </div>
-            <div className="summary-line">
-              <span>Acquisition cost / KG</span>
-              <strong>{money(batch.acquisitionCostPerKg)}</strong>
-            </div>
+            {showTheoreticalProfit && (
+              <>
+                <div className="summary-line">
+                  <span>Purchase cost / KG</span>
+                  <strong>{money(batch.purchaseCostPerKg)}</strong>
+                </div>
+                <div className="summary-line">
+                  <span>Acquisition cost / KG</span>
+                  <strong>{money(batch.acquisitionCostPerKg)}</strong>
+                </div>
+              </>
+            )}
             <div className="summary-line">
               <span>Sold revenue</span>
               <strong>{money(totals.revenue)}</strong>
             </div>
-            <div className="summary-line">
-              <span>Inventory cost</span>
-              <strong>{money(totals.cost)}</strong>
-            </div>
+            {showTheoreticalProfit && (
+              <div className="summary-line">
+                <span>Inventory cost</span>
+                <strong>{money(totals.cost)}</strong>
+              </div>
+            )}
           </section>
           <section className="form-panel">
             <div className="detail-section-title">
@@ -148,7 +177,13 @@ export function InventoryBatchDetail() {
             </div>
             <DataTable
               query={{ ...query, data: history }}
-              columns={["Sale", "Date", "Sold KG", "Revenue", "Profit"]}
+              columns={[
+                "Sale",
+                "Date",
+                "Sold KG",
+                "Revenue",
+                ...(showTheoreticalProfit ? ["Profit"] : []),
+              ]}
               render={(item) => (
                 <tr key={item._id || item.id}>
                   <td className="strong">
@@ -163,7 +198,9 @@ export function InventoryBatchDetail() {
                   </td>
                   <td>{kilos(item.quantityKg)}</td>
                   <td>{money(item.saleRevenue)}</td>
-                  <td>{money(item.realizedProfit)}</td>
+                  {showTheoreticalProfit && (
+                    <td>{money(item.realizedProfit)}</td>
+                  )}
                 </tr>
               )}
             />

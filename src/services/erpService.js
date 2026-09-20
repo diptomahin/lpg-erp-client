@@ -42,7 +42,10 @@ export const saleService = {
 };
 export const purchaseService = {
   list: (params) => list("/purchases", params),
+  get: (id) => detail(`/purchases/${id}`),
   create: (payload) => apiClient.post("/purchases", payload).then(unwrap),
+  confirmQuantity: (id, payload) =>
+    apiClient.patch(`/purchases/${id}/quantity`, payload).then(unwrap),
 };
 export const inventoryService = {
   get: (params) => list("/inventory", params),

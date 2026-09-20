@@ -1,11 +1,12 @@
 ﻿import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight, Plus } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import PageHeader from "../../components/common/PageHeader";
 import ListPage from "../../components/common/ListPage";
 import { apiError } from "../../services/apiClient";
 import { purchaseService, supplierService } from "../../services/erpService";
+import { DataState } from "../../components/common/DataState";
 import { kilos, mapById, money, rowsOf } from "../../utils/formatters";
 import { useToast } from "../../components/common/useToast";
 import { today } from "../../utils/dates";
@@ -44,7 +45,11 @@ export function Purchases() {
 
         return (
           <tr key={row._id || row.id}>
-            <td className="strong">{row.purchaseNumber}</td>
+            <td className="strong">
+              <Link to={`/purchases/${row._id || row.id}`}>
+                {row.purchaseNumber}
+              </Link>
+            </td>
             <td>{supplier.name || row.supplierName || "-"}</td>
             <td>
               {row.purchaseDate
@@ -80,7 +85,6 @@ export function PurchaseForm() {
     quantityUnit: "kg",
     quantity: "",
     purchaseRatePerKg: "",
-    additionalCost: "",
     totalPaid: "",
     purchaseDate: today(),
     notes: "",
@@ -105,9 +109,7 @@ export function PurchaseForm() {
 
   const quantityKg =
     Number(form.quantity || 0) * (form.quantityUnit === "ton" ? 1000 : 1);
-  const total =
-    quantityKg * Number(form.purchaseRatePerKg || 0) +
-    Number(form.additionalCost || 0);
+  const total = quantityKg * Number(form.purchaseRatePerKg || 0);
   const selectedSupplier = rowsOf(suppliers.data).find(
     (supplier) => String(supplier._id || supplier.id) === String(form.supplier),
   );
@@ -132,7 +134,6 @@ export function PurchaseForm() {
       ? { quantityTon: Number(form.quantity) }
       : { quantityKg: Number(form.quantity) }),
     purchaseRatePerKg: Number(form.purchaseRatePerKg),
-    additionalCost: Number(form.additionalCost || 0),
     totalPaid: Number(form.totalPaid || 0),
     purchaseDate: form.purchaseDate,
     notes: form.notes.trim(),
@@ -248,22 +249,6 @@ export function PurchaseForm() {
           </label>
 
           <label>
-            Additional cost
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.additionalCost}
-              onChange={(event) =>
-                setForm({ ...form, additionalCost: event.target.value })
-              }
-            />
-            <span className="amount-preview">
-              {money(Number(form.additionalCost || 0))}
-            </span>
-          </label>
-
-          <label>
             Initial payment
             <input
               type="number"
@@ -315,6 +300,152 @@ export function PurchaseForm() {
           </button>
         </div>
       </form>
+    </>
+  );
+}
+
+export function PurchaseDetail() {
+  const id = useLocation().pathname.split("/").pop();
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const user = JSON.parse(localStorage.getItem("lpg_user") || "null");
+  const query = useQuery({
+    queryKey: ["purchase", id],
+    queryFn: () => purchaseService.get(id),
+  });
+  const purchase = query.data?.purchase || query.data || {};
+  const [actualQuantityKg, setActualQuantityKg] = useState("");
+  const [error, setError] = useState("");
+  const quantity = Number(actualQuantityKg || 0);
+  const estimatedQuantityKg = Number(
+    purchase.estimatedQuantityKg || purchase.quantityKg || 0,
+  );
+  const confirmedQuantityKg = Number(
+    purchase.actualQuantityKg ||
+      (purchase.quantityStatus === "confirmed" ? purchase.quantityKg : 0),
+  );
+  const ratePerKg = Number(purchase.purchaseRatePerKg || 0);
+  const previewTotal = quantity * ratePerKg;
+  const previewDue = Math.max(
+    0,
+    previewTotal - Number(purchase.totalPaid || 0),
+  );
+  const mutation = useMutation({
+    mutationFn: () =>
+      purchaseService.confirmQuantity(id, { actualQuantityKg: quantity }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["purchase", id] }),
+        queryClient.invalidateQueries({ queryKey: ["purchases"] }),
+        queryClient.invalidateQueries({ queryKey: ["inventory"] }),
+        queryClient.invalidateQueries({ queryKey: ["suppliers"] }),
+      ]);
+      setActualQuantityKg("");
+      setError("");
+      showToast("Actual purchase quantity confirmed.");
+    },
+    onError: (requestError) => setError(apiError(requestError)),
+  });
+
+  return (
+    <>
+      <PageHeader
+        title={purchase.purchaseNumber || "Purchase details"}
+        description="Review the estimated delivery and confirm the supplier's actual KG."
+        action={
+          <Link className="secondary" to="/purchases">
+            Back to purchases
+          </Link>
+        }
+      />
+      <DataState query={query}>
+        <div className="detail-grid">
+          <section className="form-panel">
+            <p className="eyebrow">Purchase record</p>
+            <h2>{purchase.supplier?.name || "Supplier"}</h2>
+            <div className="summary-line">
+              <span>Estimated quantity</span>
+              <strong>{kilos(estimatedQuantityKg)}</strong>
+            </div>
+            <div className="summary-line">
+              <span>Actual quantity</span>
+              <strong>
+                {confirmedQuantityKg
+                  ? kilos(confirmedQuantityKg)
+                  : "Not confirmed"}
+              </strong>
+            </div>
+            <div className="summary-line">
+              <span>Purchase rate / KG</span>
+              <strong>{money(ratePerKg)}</strong>
+            </div>
+            <div className="summary-line">
+              <span>Current total</span>
+              <strong>{money(purchase.totalCost)}</strong>
+            </div>
+            <div className="summary-line">
+              <span>Current due</span>
+              <strong>{money(purchase.totalDue)}</strong>
+            </div>
+            <div className="summary-line">
+              <span>Quantity status</span>
+              <strong>{purchase.quantityStatus || "estimated"}</strong>
+            </div>
+          </section>
+          <form
+            className="form-panel"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setError("");
+              if (!(quantity > 0)) {
+                setError("Enter the actual quantity in KG.");
+                return;
+              }
+              mutation.mutate();
+            }}
+          >
+            <p className="eyebrow">Reconciliation</p>
+            <h2>Confirm actual quantity</h2>
+            <label>
+              Actual quantity in KG
+              <input
+                type="number"
+                min="0.001"
+                step="0.001"
+                required
+                value={actualQuantityKg}
+                onChange={(event) => setActualQuantityKg(event.target.value)}
+              />
+            </label>
+            {actualQuantityKg && (
+              <div className="customer-balance-callout">
+                <div>
+                  <span>Updated total cost</span>
+                  <strong>{money(previewTotal)}</strong>
+                </div>
+                <div>
+                  <span>Updated due</span>
+                  <strong>{money(previewDue)}</strong>
+                </div>
+              </div>
+            )}
+            {user?.role !== "admin" && (
+              <div className="form-error">
+                Only administrators can confirm quantities because this changes
+                supplier payables.
+              </div>
+            )}
+            {error && <div className="form-error">{error}</div>}
+            <button
+              className="primary"
+              disabled={user?.role !== "admin" || mutation.isPending}
+            >
+              {mutation.isPending ? "Confirming..." : "Confirm actual quantity"}
+              <ArrowUpRight size={17} />
+            </button>
+          </form>
+        </div>
+      </DataState>
     </>
   );
 }

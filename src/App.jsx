@@ -11,7 +11,11 @@ import Advances from "./pages/customers/Advances";
 import Suppliers, { SupplierForm } from "./pages/suppliers/Suppliers";
 import SupplierAdvances from "./pages/suppliers/SupplierAdvances";
 import SupplierOverview from "./pages/suppliers/SupplierOverview";
-import { Purchases, PurchaseForm } from "./pages/purchases/Purchases";
+import {
+  Purchases,
+  PurchaseDetail,
+  PurchaseForm,
+} from "./pages/purchases/Purchases";
 import { Sales, SaleForm, SaleDetail } from "./pages/sales/Sales";
 import Inventory, { InventoryBatchDetail } from "./pages/inventory/Inventory";
 import Payments from "./pages/payments/Payments";
@@ -83,6 +87,7 @@ function ProtectedRoute() {
           />
           <Route path="/purchases" element={<Purchases />} />
           <Route path="/purchases/new" element={<PurchaseForm />} />
+          <Route path="/purchases/:id" element={<PurchaseDetail />} />
           <Route path="/inventory" element={<Inventory />} />
           <Route
             path="/inventory/batches/:id"
