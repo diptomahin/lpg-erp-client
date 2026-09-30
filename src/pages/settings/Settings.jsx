@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Check, Eye, EyeOff, LockKeyhole } from "lucide-react";
+import { Link } from "react-router-dom";
 import PageHeader from "../../components/common/PageHeader";
 import { apiError } from "../../services/apiClient";
 import { authService, settingsService } from "../../services/erpService";
@@ -59,6 +60,13 @@ export default function Settings({ user }) {
       <PageHeader
         title="Settings"
         description="Control report visibility and secure your account."
+        action={
+          user?.role === "admin" ? (
+            <Link className="secondary" to="/settings/cylinder-types">
+              Cylinder fill quantities
+            </Link>
+          ) : null
+        }
       />
       <div className="settings-grid">
         <section className="form-panel settings-panel">

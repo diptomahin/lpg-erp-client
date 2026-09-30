@@ -23,6 +23,7 @@ import Expenses, { ExpenseForm } from "./pages/expenses/Expenses";
 import Reports from "./pages/reports/Reports";
 import Salary from "./pages/salary/Salary";
 import Settings from "./pages/settings/Settings";
+import CylinderTypes from "./pages/settings/CylinderTypes";
 import { ToastProvider } from "./components/common/Toast";
 import "./App.css";
 
@@ -108,7 +109,7 @@ function ProtectedRoute() {
           <Route path="/settings" element={<Settings user={user} />} />
           <Route
             path="/settings/cylinder-types"
-            element={<Settings user={user} />}
+            element={<CylinderTypes user={user} />}
           />
           <Route path="*" element={<ComingSoon />} />
         </>

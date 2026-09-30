@@ -53,7 +53,7 @@ export default function Payments({ type }) {
   const [error, setError] = useState("");
   const mutation = useMutation({
     mutationFn: create,
-    onSuccess: () => {
+    onSuccess: (result) => {
       setForm({
         account: "",
         transaction: "",
@@ -75,7 +75,9 @@ export default function Payments({ type }) {
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
       queryClient.invalidateQueries({ queryKey: ["monthly-report"] });
       showToast(
-        `${customer ? "Customer" : "Supplier"} payment recorded successfully.`,
+        Number(result?.advanceAmount || 0) > 0
+          ? `${money(result.appliedAmount)} applied to ${customer ? "customer due" : "supplier payable"}; ${money(result.advanceAmount)} added to ${customer ? "customer" : "supplier"} advance.`
+          : `${customer ? "Customer" : "Supplier"} payment recorded successfully.`,
       );
     },
     onError: (requestError) => setError(apiError(requestError)),
@@ -87,6 +89,19 @@ export default function Payments({ type }) {
   const selectedAccount = accountRows.find(
     (row) => String(row._id || row.id) === String(form.account),
   );
+  const outstandingBalance = Math.max(
+    Number(selectedAccount?.totalDue || 0),
+    Number(
+      customer
+        ? selectedAccount?.existingReceivable || 0
+        : selectedAccount?.existingPayable || 0,
+    ),
+  );
+  const enteredAmount = Number(form.amount || 0);
+  const paymentSplit = {
+    applied: Math.min(enteredAmount, outstandingBalance),
+    advance: Math.max(0, enteredAmount - outstandingBalance),
+  };
   const availableTransactions = transactionRows.filter((row) => {
     if (!form.account) return false;
     const linkedAccount = row[accountField];
@@ -247,6 +262,28 @@ export default function Payments({ type }) {
               {money(Number(form.amount || 0))}
             </span>
           </label>
+          {form.paymentType !== "advance" &&
+            !form.transaction &&
+            enteredAmount > 0 && (
+              <div
+                className="due-callout payment-split-preview"
+                aria-live="polite"
+              >
+                <span>Payment allocation</span>
+                <div>
+                  <span>
+                    Applied to outstanding {customer ? "due" : "payable"}
+                  </span>
+                  <strong>{money(paymentSplit.applied)}</strong>
+                </div>
+                <div>
+                  <span>
+                    Added to {customer ? "customer" : "supplier"} advance
+                  </span>
+                  <strong>{money(paymentSplit.advance)}</strong>
+                </div>
+              </div>
+            )}
           <div className="form-grid">
             <label>
               Payment date
@@ -305,6 +342,7 @@ export default function Payments({ type }) {
             "Payment",
             "Account",
             "Date",
+            "Purpose",
             "Amount",
             "Method",
             "Reference",
@@ -319,6 +357,15 @@ export default function Payments({ type }) {
                 {row.paymentDate
                   ? new Date(row.paymentDate).toLocaleDateString()
                   : "-"}
+              </td>
+              <td>
+                {row.paymentType === "advance"
+                  ? "Advance"
+                  : row.paymentType === "advance_application"
+                    ? "Advance applied"
+                    : customer
+                      ? "Due payment"
+                      : "Payable payment"}
               </td>
               <td>{money(row.amount)}</td>
               <td>{row.paymentMethod || "-"}</td>

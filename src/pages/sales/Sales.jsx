@@ -94,13 +94,15 @@ export function SaleForm() {
   const { showToast } = useToast();
   const clients = useQuery({
     queryKey: ["customers"],
-    queryFn: () => customerService.list({ limit: 100 }),
+    queryFn: () => customerService.list({ limit: 100, status: "active" }),
   });
   const typesQuery = useQuery({
-    queryKey: ["cylinder-types"],
-    queryFn: cylinderService.list,
+    queryKey: ["cylinder-types", "active"],
+    queryFn: () => cylinderService.list({ status: "active" }),
   });
-  const types = rowsOf(typesQuery.data);
+  const types = rowsOf(typesQuery.data)
+    .slice()
+    .sort((left, right) => Number(left.capacityKg) - Number(right.capacityKg));
   const [form, setForm] = useState({
     customer: "",
     saleDate: today(),
@@ -134,7 +136,9 @@ export function SaleForm() {
   }));
   const totalKg = selected.reduce(
     (sum, item) =>
-      sum + (item.type?.capacityKg || 0) * Number(item.cylinderCount || 0),
+      sum +
+      Number(item.type?.filledQuantityKg ?? item.type?.capacityKg ?? 0) *
+        Number(item.cylinderCount || 0),
     0,
   );
   const subtotal = selected.reduce(
@@ -199,7 +203,12 @@ export function SaleForm() {
                   cylinderCount: Number(cylinderCount),
                   pricePerCylinder: cylinderPrice,
                   ratePerKg: type
-                    ? Number((cylinderPrice / type.capacityKg).toFixed(4))
+                    ? Number(
+                        (
+                          cylinderPrice /
+                          Number(type.filledQuantityKg ?? type.capacityKg)
+                        ).toFixed(4),
+                      )
                     : 0,
                 };
               },
@@ -275,7 +284,10 @@ export function SaleForm() {
                       key={type._id || type.id}
                       value={type._id || type.id}
                     >
-                      {type.capacityKg} KG
+                      {type.name || `${type.capacityKg} KG`}
+                      {Number(type.filledQuantityKg ?? type.capacityKg) !==
+                        Number(type.capacityKg) &&
+                        ` (${type.filledQuantityKg} KG fill)`}
                     </option>
                   ))}
                 </select>
@@ -414,7 +426,9 @@ export function SaleForm() {
             item.type ? (
               <div className="summary-line" key={item.cylinderType || index}>
                 <span>
-                  {item.type.capacityKg} KG x {item.cylinderCount} x{" "}
+                  {item.type.name || `${item.type.capacityKg} KG`} (
+                  {Number(item.type.filledQuantityKg ?? item.type.capacityKg)}{" "}
+                  KG fill) x {item.cylinderCount} x{" "}
                   {money(item.pricePerCylinder)}
                 </span>
                 <strong>
@@ -523,6 +537,7 @@ export function SaleDetail() {
                 <thead>
                   <tr>
                     <th>Type</th>
+                    <th>Fill / cylinder</th>
                     <th>Pieces</th>
                     <th>Price / cylinder</th>
                     <th>Rate / KG</th>
@@ -537,14 +552,18 @@ export function SaleDetail() {
                         ? item.cylinderType
                         : {};
                     const capacity = item.capacityKg || type.capacityKg || 0;
+                    const filledQuantityKg = Number(
+                      item.filledQuantityKg ?? capacity,
+                    );
                     const pricePerCylinder =
                       item.pricePerCylinder ??
-                      Number(item.ratePerKg || 0) * capacity;
+                      Number(item.ratePerKg || 0) * filledQuantityKg;
                     return (
                       <tr key={`${item.cylinderType?._id || "item"}-${index}`}>
                         <td className="strong">
                           {type.name || `${capacity} KG`}
                         </td>
+                        <td>{kilos(filledQuantityKg)}</td>
                         <td>{item.cylinderCount || 0}</td>
                         <td>{money(pricePerCylinder)}</td>
                         <td>{money(item.ratePerKg || 0)}</td>

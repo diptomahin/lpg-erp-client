@@ -24,6 +24,7 @@ export const customerService = {
   create: (payload) => apiClient.post("/customers", payload).then(unwrap),
   update: (id, payload) =>
     apiClient.put(`/customers/${id}`, payload).then(unwrap),
+  remove: (id) => apiClient.delete(`/customers/${id}`).then(unwrap),
 };
 export const supplierService = {
   list: (params) => list("/suppliers", params),
@@ -33,8 +34,14 @@ export const supplierService = {
   create: (payload) => apiClient.post("/suppliers", payload).then(unwrap),
   update: (id, payload) =>
     apiClient.put(`/suppliers/${id}`, payload).then(unwrap),
+  remove: (id) => apiClient.delete(`/suppliers/${id}`).then(unwrap),
 };
-export const cylinderService = { list: () => list("/cylinder-types") };
+export const cylinderService = {
+  list: (params) => list("/cylinder-types", params),
+  create: (payload) => apiClient.post("/cylinder-types", payload).then(unwrap),
+  update: (id, payload) =>
+    apiClient.put(`/cylinder-types/${id}`, payload).then(unwrap),
+};
 export const saleService = {
   list: (params) => list("/sales", params),
   get: (id) => detail(`/sales/${id}`),

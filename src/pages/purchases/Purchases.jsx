@@ -77,7 +77,7 @@ export function PurchaseForm() {
   const { showToast } = useToast();
   const suppliers = useQuery({
     queryKey: ["suppliers"],
-    queryFn: () => supplierService.list({ limit: 100 }),
+    queryFn: () => supplierService.list({ limit: 100, status: "active" }),
   });
 
   const [form, setForm] = useState({
