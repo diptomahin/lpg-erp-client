@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, CircleDollarSign } from "lucide-react";
 import PageHeader from "../../components/common/PageHeader";
 import { DataTable } from "../../components/common/DataState";
 import { customerService } from "../../services/erpService";
@@ -9,7 +9,7 @@ import { money } from "../../utils/formatters";
 const dateText = (value) =>
   value ? new Date(value).toLocaleDateString() : "-";
 
-export default function Advances() {
+export default function Advances({ user }) {
   const query = useQuery({
     queryKey: ["customer-advances"],
     queryFn: customerService.advances,
@@ -28,7 +28,7 @@ export default function Advances() {
           "Available advance",
           "Last advance",
           "Method",
-          "",
+          "Actions",
         ]}
         render={(row) => {
           const latest = row.advances?.[0];
@@ -41,14 +41,26 @@ export default function Advances() {
               <td>{dateText(latest?.paymentDate)}</td>
               <td>{latest?.paymentMethod || "cash"}</td>
               <td>
-                <Link
-                  className="icon-button"
-                  to={`/customers/${row._id || row.id}`}
-                  aria-label={`View ${row.name}`}
-                  title="View customer history"
-                >
-                  <ArrowUpRight size={16} />
-                </Link>
+                <div className="row-actions">
+                  <Link
+                    className="icon-button"
+                    to={`/customers/${row._id || row.id}`}
+                    aria-label={`View ${row.name}`}
+                    title="View customer history"
+                  >
+                    <ArrowUpRight size={16} />
+                  </Link>
+                  {user?.role === "admin" && (
+                    <Link
+                      className="icon-button"
+                      to={`/customers/${row._id || row.id}/refund-advance`}
+                      aria-label={`Refund advance to ${row.name}`}
+                      title="Refund customer advance"
+                    >
+                      <CircleDollarSign size={16} />
+                    </Link>
+                  )}
+                </div>
               </td>
             </tr>
           );

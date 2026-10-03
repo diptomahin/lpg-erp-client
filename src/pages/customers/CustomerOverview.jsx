@@ -1,15 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Edit3 } from "lucide-react";
+import { ArrowLeft, CircleDollarSign, Edit3 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import PageHeader from "../../components/common/PageHeader";
-import { DataState, DataTable } from "../../components/common/DataState";
+import { DataTable } from "../../components/common/DataState";
 import { customerService } from "../../services/erpService";
 import { money, kilos } from "../../utils/formatters";
 
 const dateText = (value) =>
   value ? new Date(value).toLocaleDateString() : "-";
 
-export default function CustomerOverview() {
+export default function CustomerOverview({ user }) {
   const { id } = useParams();
   const query = useQuery({
     queryKey: ["customer-overview", id],
@@ -46,6 +46,15 @@ export default function CustomerOverview() {
             <Link className="primary" to={`/customers/${id}/edit`}>
               <Edit3 size={16} /> Edit
             </Link>
+            {user?.role === "admin" &&
+              Number(customer?.advanceBalance || 0) > 0 && (
+                <Link
+                  className="secondary"
+                  to={`/customers/${id}/refund-advance`}
+                >
+                  <CircleDollarSign size={16} /> Refund advance
+                </Link>
+              )}
           </div>
         }
       />
@@ -132,23 +141,37 @@ export default function CustomerOverview() {
       </div>
       <DataTable
         rows={payments}
-        columns={["Date", "Receipt", "Sale", "Method", "Amount"]}
+        columns={["Date", "Receipt", "Sale / details", "Method", "Amount"]}
         render={(payment) => (
           <tr key={payment._id}>
             <td>{dateText(payment.paymentDate)}</td>
             <td>{payment.paymentNumber || "-"}</td>
-            <td>{payment.sale?.invoiceNumber || "General payment"}</td>
+            <td>
+              {payment.paymentType === "advance_refund"
+                ? `Advance refund${payment.advanceRefundOf?.paymentNumber ? ` of ${payment.advanceRefundOf.paymentNumber}` : ""}`
+                : payment.paymentType === "advance"
+                  ? "Customer advance"
+                  : payment.paymentType === "advance_restoration"
+                    ? "Advance restored from voided sale"
+                    : payment.sale?.invoiceNumber || "General payment"}
+            </td>
             <td>{payment.paymentMethod || "cash"}</td>
             <td
               className={
-                payment.paymentType === "advance"
+                ["advance", "advance_restoration", "advance_refund"].includes(
+                  payment.paymentType,
+                )
                   ? "strong advance-amount"
                   : "strong"
               }
             >
-              {payment.paymentType === "advance"
+              {payment.paymentType === "advance_refund"
                 ? `-${money(payment.amount)}`
-                : money(payment.amount)}
+                : ["advance", "advance_restoration"].includes(
+                      payment.paymentType,
+                    )
+                  ? `-${money(payment.amount)}`
+                  : money(payment.amount)}
             </td>
           </tr>
         )}

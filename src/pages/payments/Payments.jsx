@@ -361,13 +361,21 @@ export default function Payments({ type }) {
               <td>
                 {row.paymentType === "advance"
                   ? "Advance"
-                  : row.paymentType === "advance_application"
-                    ? "Advance applied"
-                    : customer
-                      ? "Due payment"
-                      : "Payable payment"}
+                  : row.paymentType === "advance_refund"
+                    ? "Advance refund"
+                    : row.paymentType === "advance_restoration"
+                      ? "Advance restored"
+                      : row.paymentType === "advance_application"
+                        ? "Advance applied"
+                        : customer
+                          ? "Due payment"
+                          : "Payable payment"}
               </td>
-              <td>{money(row.amount)}</td>
+              <td>
+                {row.paymentType === "advance_refund"
+                  ? `-${money(row.amount)}`
+                  : money(row.amount)}
+              </td>
               <td>{row.paymentMethod || "-"}</td>
               <td>{row.reference || "-"}</td>
             </tr>

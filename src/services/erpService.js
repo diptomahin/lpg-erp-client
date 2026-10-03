@@ -19,6 +19,9 @@ export const customerService = {
   list: (params) => list("/customers", params),
   get: (id) => detail(`/customers/${id}`),
   overview: (id) => detail(`/customers/${id}/overview`),
+  advanceDetails: (id) => detail(`/customers/${id}/advances`),
+  refundAdvance: (id, payload) =>
+    apiClient.post(`/customers/${id}/advance-refunds`, payload).then(unwrap),
   dues: () => detail("/dues"),
   advances: () => detail("/advances"),
   create: (payload) => apiClient.post("/customers", payload).then(unwrap),

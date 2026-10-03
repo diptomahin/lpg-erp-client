@@ -285,9 +285,6 @@ export function SaleForm() {
                       value={type._id || type.id}
                     >
                       {type.name || `${type.capacityKg} KG`}
-                      {Number(type.filledQuantityKg ?? type.capacityKg) !==
-                        Number(type.capacityKg) &&
-                        ` (${type.filledQuantityKg} KG fill)`}
                     </option>
                   ))}
                 </select>

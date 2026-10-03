@@ -235,6 +235,14 @@ const metricConfig = [
     ],
   },
   {
+    id: "totalCustomerRefunds",
+    label: "Customer advance refunds",
+    icon: CircleDollarSign,
+    tone: "orange",
+    progress: 36,
+    aliases: ["totalCustomerRefunds", "customerRefunds"],
+  },
+  {
     id: "totalSupplierAdvances",
     label: "Supplier advances",
     icon: Factory,

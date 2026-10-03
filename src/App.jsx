@@ -8,6 +8,7 @@ import { Customers, CustomerForm } from "./pages/customers/Customers";
 import CustomerOverview from "./pages/customers/CustomerOverview";
 import Dues from "./pages/customers/Dues";
 import Advances from "./pages/customers/Advances";
+import CustomerAdvanceRefund from "./pages/customers/CustomerAdvanceRefund";
 import Suppliers, { SupplierForm } from "./pages/suppliers/Suppliers";
 import SupplierAdvances from "./pages/suppliers/SupplierAdvances";
 import SupplierOverview from "./pages/suppliers/SupplierOverview";
@@ -73,10 +74,17 @@ function ProtectedRoute() {
           <Route path="/sales/:id" element={<SaleDetail />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/customers/new" element={<CustomerForm />} />
-          <Route path="/customers/:id" element={<CustomerOverview />} />
+          <Route
+            path="/customers/:id"
+            element={<CustomerOverview user={user} />}
+          />
           <Route path="/customers/:id/edit" element={<CustomerForm />} />
+          <Route
+            path="/customers/:id/refund-advance"
+            element={<CustomerAdvanceRefund user={user} />}
+          />
           <Route path="/dues" element={<Dues />} />
-          <Route path="/advances" element={<Advances />} />
+          <Route path="/advances" element={<Advances user={user} />} />
           <Route path="/supplier-advances" element={<SupplierAdvances />} />
           <Route path="/suppliers" element={<Suppliers />} />
           <Route path="/suppliers/new" element={<SupplierForm />} />
