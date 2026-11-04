@@ -585,6 +585,20 @@ export default function Reports() {
       <PageHeader
         title="Reports"
         description="Operational and financial reports across purchases, sales, expenses, salaries, and profitability."
+        action={
+          <button
+            className="primary report-download"
+            type="button"
+            onClick={() =>
+              printToPdf(
+                `Al-Aksha_report_${reportFilePeriod(mode, range, month, year)}`,
+              )
+            }
+            disabled={!query.data || query.isFetching}
+          >
+            <Download size={16} /> Download full report PDF
+          </button>
+        }
       />
 
       <div className="report-toolbar">
@@ -632,18 +646,6 @@ export default function Reports() {
             </span>
           )}
         </label>
-        <button
-          className="primary report-download"
-          type="button"
-          onClick={() =>
-            printToPdf(
-              `Al-Aksha_report_${reportFilePeriod(mode, range, month, year)}`,
-            )
-          }
-          disabled={!query.data || query.isFetching}
-        >
-          <Download size={16} /> Download full report PDF
-        </button>
       </div>
 
       <DataState query={query}>
