@@ -6,12 +6,14 @@ import Dashboard from "./pages/Dashboard";
 import Shell from "./layouts/Shell";
 import { Customers, CustomerForm } from "./pages/customers/Customers";
 import CustomerOverview from "./pages/customers/CustomerOverview";
+import CustomerStatement from "./pages/customers/CustomerStatement";
 import Dues from "./pages/customers/Dues";
 import Advances from "./pages/customers/Advances";
 import CustomerAdvanceRefund from "./pages/customers/CustomerAdvanceRefund";
 import Suppliers, { SupplierForm } from "./pages/suppliers/Suppliers";
 import SupplierAdvances from "./pages/suppliers/SupplierAdvances";
 import SupplierOverview from "./pages/suppliers/SupplierOverview";
+import SupplierStatement from "./pages/suppliers/SupplierStatement";
 import {
   Purchases,
   PurchaseDetail,
@@ -23,6 +25,7 @@ import Payments from "./pages/payments/Payments";
 import Expenses, { ExpenseForm } from "./pages/expenses/Expenses";
 import Reports from "./pages/reports/Reports";
 import Salary from "./pages/salary/Salary";
+import EmployeeDetails from "./pages/salary/EmployeeDetails";
 import Settings from "./pages/settings/Settings";
 import CylinderTypes from "./pages/settings/CylinderTypes";
 import { ToastProvider } from "./components/common/Toast";
@@ -78,6 +81,10 @@ function ProtectedRoute() {
             path="/customers/:id"
             element={<CustomerOverview user={user} />}
           />
+          <Route
+            path="/customers/:id/statement"
+            element={<CustomerStatement />}
+          />
           <Route path="/customers/:id/edit" element={<CustomerForm />} />
           <Route
             path="/customers/:id/refund-advance"
@@ -89,6 +96,10 @@ function ProtectedRoute() {
           <Route path="/suppliers" element={<Suppliers />} />
           <Route path="/suppliers/new" element={<SupplierForm />} />
           <Route path="/suppliers/:id" element={<SupplierOverview />} />
+          <Route
+            path="/suppliers/:id/statement"
+            element={<SupplierStatement />}
+          />
           <Route path="/suppliers/:id/edit" element={<SupplierForm />} />
           <Route
             path="/suppliers/:supplierId/payments"
@@ -113,6 +124,10 @@ function ProtectedRoute() {
           <Route path="/expenses" element={<Expenses />} />
           <Route path="/expenses/new" element={<ExpenseForm />} />
           <Route path="/reports" element={<Reports />} />
+          <Route
+            path="/salary/employees/:id"
+            element={<EmployeeDetails />}
+          />
           <Route path="/salary" element={<Salary user={user} />} />
           <Route path="/settings" element={<Settings user={user} />} />
           <Route

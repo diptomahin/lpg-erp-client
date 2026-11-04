@@ -1,5 +1,11 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, CircleDollarSign, Edit3 } from "lucide-react";
+import {
+  ArrowLeft,
+  CircleDollarSign,
+  Edit3,
+  FileText,
+} from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import PageHeader from "../../components/common/PageHeader";
 import { DataTable } from "../../components/common/DataState";
@@ -8,6 +14,75 @@ import { money, kilos } from "../../utils/formatters";
 
 const dateText = (value) =>
   value ? new Date(value).toLocaleDateString() : "-";
+
+const pageSize = 20;
+
+function PaginatedTable({ rows, columns, render }) {
+  const [page, setPage] = useState(1);
+  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const start = (currentPage - 1) * pageSize;
+  const visibleRows = rows.slice(start, start + pageSize);
+
+  return (
+    <>
+      <DataTable
+        rows={visibleRows}
+        columns={columns}
+        render={render}
+      />
+      {rows.length > 0 && (
+        <nav className="table-pagination" aria-label="Table pagination">
+          <span>
+            Showing {start + 1}–{Math.min(start + pageSize, rows.length)} of{" "}
+            {rows.length}
+          </span>
+          <div className="table-pagination-actions">
+            <button
+              className="secondary"
+              type="button"
+              onClick={() => setPage(1)}
+              disabled={currentPage === 1}
+              aria-label="First page"
+            >
+              First
+            </button>
+            <button
+              className="secondary"
+              type="button"
+              onClick={() => setPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              aria-label="Previous page"
+            >
+              Previous
+            </button>
+            <span>
+              Page {currentPage} of {pageCount}
+            </span>
+            <button
+              className="secondary"
+              type="button"
+              onClick={() => setPage(currentPage + 1)}
+              disabled={currentPage === pageCount}
+              aria-label="Next page"
+            >
+              Next
+            </button>
+            <button
+              className="secondary"
+              type="button"
+              onClick={() => setPage(pageCount)}
+              disabled={currentPage === pageCount}
+              aria-label="Last page"
+            >
+              Last
+            </button>
+          </div>
+        </nav>
+      )}
+    </>
+  );
+}
 
 export default function CustomerOverview({ user }) {
   const { id } = useParams();
@@ -45,6 +120,9 @@ export default function CustomerOverview({ user }) {
             </Link>
             <Link className="primary" to={`/customers/${id}/edit`}>
               <Edit3 size={16} /> Edit
+            </Link>
+            <Link className="secondary" to={`/customers/${id}/statement`}>
+              <FileText size={16} /> Statement
             </Link>
             {user?.role === "admin" &&
               Number(customer?.advanceBalance || 0) > 0 && (
@@ -103,7 +181,7 @@ export default function CustomerOverview({ user }) {
           <h2>Sales transactions</h2>
         </div>
       </div>
-      <DataTable
+      <PaginatedTable
         rows={sales}
         columns={[
           "Date",
@@ -139,7 +217,7 @@ export default function CustomerOverview({ user }) {
           <h2>Customer payments</h2>
         </div>
       </div>
-      <DataTable
+      <PaginatedTable
         rows={payments}
         columns={["Date", "Receipt", "Sale / details", "Method", "Amount"]}
         render={(payment) => (
@@ -183,7 +261,7 @@ export default function CustomerOverview({ user }) {
           <h2>Running ledger</h2>
         </div>
       </div>
-      <DataTable
+      <PaginatedTable
         rows={ledger}
         columns={[
           "Date",

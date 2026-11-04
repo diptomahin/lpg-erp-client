@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight, BriefcaseBusiness, HandCoins, Plus } from "lucide-react";
+import { Link } from "react-router-dom";
 import PageHeader from "../../components/common/PageHeader";
-import { DataTable } from "../../components/common/DataState";
+import { DataState, DataTable } from "../../components/common/DataState";
 import { apiError } from "../../services/apiClient";
 import { salaryService } from "../../services/erpService";
 import { money, rowsOf } from "../../utils/formatters";
@@ -29,12 +30,16 @@ export default function Salary({ user }) {
   const { showToast } = useToast();
   const people = useQuery({
     queryKey: ["salary-people"],
-    queryFn: () => salaryService.people({ page: 1, limit: 100 }),
+    queryFn: salaryService.peopleAll,
   });
   const salaries = useQuery({
     queryKey: ["salary-payments"],
-    queryFn: () => salaryService.salaries({ page: 1, limit: 20 }),
+    queryFn: salaryService.salariesAll,
   });
+  const [salaryMonth, setSalaryMonth] = useState(() => today().slice(0, 7));
+  const [peopleSalaryMonth, setPeopleSalaryMonth] = useState(() =>
+    today().slice(0, 7),
+  );
   const [personForm, setPersonForm] = useState(defaultPersonForm());
   const [editingPersonId, setEditingPersonId] = useState(null);
   const [salaryForm, setSalaryForm] = useState({
@@ -95,8 +100,21 @@ export default function Salary({ user }) {
   const peopleRows = rowsOf(people.data);
   const employees = peopleRows.filter((person) => person.isEmployee);
   const partners = peopleRows.filter((person) => person.isPartner);
+  const salaryRows = rowsOf(salaries.data);
+  const [selectedYear, selectedMonth] = salaryMonth.split("-").map(Number);
+  const selectedMonthPayments = salaryRows.filter((payment) => {
+    if (!payment.paymentDate) return false;
+    const paymentDate = new Date(payment.paymentDate);
+    return (
+      paymentDate.getFullYear() === selectedYear &&
+      paymentDate.getMonth() + 1 === selectedMonth
+    );
+  });
+  const [peopleSelectedYear, peopleSelectedMonth] = peopleSalaryMonth
+    .split("-")
+    .map(Number);
   const salaryByPerson = new Map();
-  for (const payment of rowsOf(salaries.data || [])) {
+  for (const payment of salaryRows) {
     const personId =
       typeof payment.person === "object"
         ? payment.person?._id || payment.person?.id
@@ -106,11 +124,11 @@ export default function Salary({ user }) {
     const paymentDate = payment.paymentDate
       ? new Date(payment.paymentDate)
       : null;
-    const isCurrentMonth =
+    const isSelectedMonth =
       paymentDate &&
-      paymentDate.getFullYear() === new Date().getFullYear() &&
-      paymentDate.getMonth() === new Date().getMonth();
-    if (!isCurrentMonth) continue;
+      paymentDate.getFullYear() === peopleSelectedYear &&
+      paymentDate.getMonth() + 1 === peopleSelectedMonth;
+    if (!isSelectedMonth) continue;
     salaryByPerson.set(personId, (salaryByPerson.get(personId) || 0) + value);
   }
 
@@ -382,6 +400,14 @@ export default function Salary({ user }) {
           <p className="eyebrow">People register</p>
           <h2>Employees and partners</h2>
         </div>
+        <label className="salary-month-filter">
+          Paid during
+          <input
+            type="month"
+            value={peopleSalaryMonth}
+            onChange={(event) => setPeopleSalaryMonth(event.target.value)}
+          />
+        </label>
       </div>
       <DataTable
         query={people}
@@ -389,7 +415,7 @@ export default function Salary({ user }) {
           "Name",
           "Role",
           "Fixed salary",
-          "Paid this month",
+          "Paid in selected month",
           "Status",
           "Action",
         ]}
@@ -402,7 +428,9 @@ export default function Salary({ user }) {
 
           return (
             <tr key={personId}>
-              <td className="strong">{person.name}</td>
+              <td className="strong">
+                <Link to={`/salary/employees/${personId}`}>{person.name}</Link>
+              </td>
               <td>
                 {[
                   person.isEmployee && "Employee",
@@ -436,32 +464,57 @@ export default function Salary({ user }) {
           <p className="eyebrow">Payment history</p>
           <h2>Salary payments</h2>
         </div>
+        <label className="salary-month-filter">
+          Month
+          <input
+            type="month"
+            value={salaryMonth}
+            onChange={(event) => setSalaryMonth(event.target.value)}
+          />
+        </label>
       </div>
-      <DataTable
-        query={salaries}
-        columns={[
-          "Employee",
-          "Period",
-          "Date",
-          "Amount",
-          "Method",
-          "Reference",
-        ]}
-        render={(row) => (
-          <tr key={row._id || row.id}>
-            <td className="strong">{row.person?.name || "-"}</td>
-            <td>{row.period || "-"}</td>
-            <td>
-              {row.paymentDate
-                ? new Date(row.paymentDate).toLocaleDateString()
-                : "-"}
-            </td>
-            <td>{money(row.amount)}</td>
-            <td>{row.paymentMethod || "-"}</td>
-            <td>{row.reference || "-"}</td>
-          </tr>
-        )}
-      />
+      <div className="table-wrap">
+        <DataState query={salaries}>
+          {selectedMonthPayments.length ? (
+            <table>
+              <thead>
+                <tr>
+                  {[
+                    "Employee",
+                    "Period",
+                    "Date",
+                    "Amount",
+                    "Method",
+                    "Reference",
+                  ].map((column) => (
+                    <th key={column}>{column}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {selectedMonthPayments.map((row) => (
+                  <tr key={row._id || row.id}>
+                    <td className="strong">{row.person?.name || "-"}</td>
+                    <td>{row.period || "-"}</td>
+                    <td>
+                      {row.paymentDate
+                        ? new Date(row.paymentDate).toLocaleDateString()
+                        : "-"}
+                    </td>
+                    <td>{money(row.amount)}</td>
+                    <td>{row.paymentMethod || "-"}</td>
+                    <td>{row.reference || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="state">
+              No salary payments found for the selected month.
+            </div>
+          )}
+        </DataState>
+      </div>
       <div className="section-heading">
         <div>
           <p className="eyebrow">Partner history</p>

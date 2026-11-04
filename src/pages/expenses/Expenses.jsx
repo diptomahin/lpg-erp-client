@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight, Plus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import PageHeader from "../../components/common/PageHeader";
-import { DataTable } from "../../components/common/DataState";
+import { DataState } from "../../components/common/DataState";
 import { apiError } from "../../services/apiClient";
 import {
   expenseCategoryService,
@@ -14,15 +14,29 @@ import { useToast } from "../../components/common/useToast";
 import { today } from "../../utils/dates";
 
 export default function Expenses() {
+  const [selectedMonth, setSelectedMonth] = useState(() =>
+    today().slice(0, 7),
+  );
   const query = useQuery({
     queryKey: ["expenses"],
-    queryFn: () => expenseService.list({ page: 1, limit: 20 }),
+    queryFn: expenseService.listAll,
   });
   const categories = useQuery({
     queryKey: ["expense-categories"],
     queryFn: () => expenseCategoryService.list({ limit: 100 }),
   });
   const categoryMap = mapById(categories.data);
+  const [selectedYear, selectedMonthNumber] = selectedMonth
+    .split("-")
+    .map(Number);
+  const expenses = rowsOf(query.data).filter((expense) => {
+    if (!expense.expenseDate) return false;
+    const date = new Date(expense.expenseDate);
+    return (
+      date.getFullYear() === selectedYear &&
+      date.getMonth() + 1 === selectedMonthNumber
+    );
+  });
 
   return (
     <>
@@ -35,31 +49,63 @@ export default function Expenses() {
           </Link>
         }
       />
-      <DataTable
-        query={query}
-        columns={["Category", "Date", "Amount", "Method", "Description"]}
-        render={(row) => {
-          const category =
-            row.category && typeof row.category === "object"
-              ? row.category
-              : categoryMap[String(row.category)] || {};
-          return (
-            <tr key={row._id || row.id}>
-              <td className="strong">
-                {category.name || row.categoryName || row.category || "-"}
-              </td>
-              <td>
-                {row.expenseDate
-                  ? new Date(row.expenseDate).toLocaleDateString()
-                  : "-"}
-              </td>
-              <td>{money(row.amount)}</td>
-              <td>{row.paymentMethod || "-"}</td>
-              <td>{row.description || row.notes || "-"}</td>
-            </tr>
-          );
-        }}
-      />
+      <div className="section-heading expense-filter-heading">
+        <label className="salary-month-filter">
+          Month
+          <input
+            type="month"
+            value={selectedMonth}
+            onChange={(event) => setSelectedMonth(event.target.value)}
+          />
+        </label>
+      </div>
+      <div className="table-wrap">
+        <DataState query={query}>
+          {expenses.length ? (
+            <table>
+              <thead>
+                <tr>
+                  {["Category", "Date", "Amount", "Method", "Description"].map(
+                    (column) => (
+                      <th key={column}>{column}</th>
+                    ),
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {expenses.map((row) => {
+                  const category =
+                    row.category && typeof row.category === "object"
+                      ? row.category
+                      : categoryMap[String(row.category)] || {};
+                  return (
+                    <tr key={row._id || row.id}>
+                      <td className="strong">
+                        {category.name ||
+                          row.categoryName ||
+                          row.category ||
+                          "-"}
+                      </td>
+                      <td>
+                        {row.expenseDate
+                          ? new Date(row.expenseDate).toLocaleDateString()
+                          : "-"}
+                      </td>
+                      <td>{money(row.amount)}</td>
+                      <td>{row.paymentMethod || "-"}</td>
+                      <td>{row.description || row.notes || "-"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <div className="state">
+              No expenses found for the selected month.
+            </div>
+          )}
+        </DataState>
+      </div>
     </>
   );
 }

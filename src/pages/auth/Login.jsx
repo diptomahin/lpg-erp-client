@@ -34,10 +34,10 @@ export default function Login() {
   return (
     <main className="login-page">
       <section className="login-panel">
-        <div className="brand-mark">
-          LP<span>G</span>
+        <div className="brand-mark business-brand">
+          Al-Aksha <span>Traders</span>
         </div>
-        <p className="eyebrow">Operations platform</p>
+        <p className="eyebrow">Al-Aksha Traders operations</p>
         <h1>Welcome back.</h1>
         <p className="muted">
           Sign in to manage your LPG distribution business.

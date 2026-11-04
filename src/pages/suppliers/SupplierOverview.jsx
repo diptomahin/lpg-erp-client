@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Edit3 } from "lucide-react";
+import { ArrowLeft, Edit3, FileText } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import PageHeader from "../../components/common/PageHeader";
 import { DataTable } from "../../components/common/DataState";
@@ -45,6 +45,9 @@ export default function SupplierOverview() {
             </Link>
             <Link className="primary" to={`/suppliers/${id}/edit`}>
               <Edit3 size={16} /> Edit
+            </Link>
+            <Link className="secondary" to={`/suppliers/${id}/statement`}>
+              <FileText size={16} /> Statement
             </Link>
           </div>
         }
