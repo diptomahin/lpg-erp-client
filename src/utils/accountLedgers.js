@@ -5,11 +5,16 @@ const timestamp = (value) => {
   return Number.isNaN(parsed) ? 0 : parsed;
 };
 
-const sortEntries = (entries) =>
+const sortEntries = (entries, recordedTimeFirst = false) =>
   entries.sort(
     (a, b) =>
-      timestamp(a.date) - timestamp(b.date) ||
-      timestamp(a.createdAt || a.date) - timestamp(b.createdAt || b.date) ||
+      (recordedTimeFirst
+        ? timestamp(a.createdAt || a.date) - timestamp(b.createdAt || b.date)
+        : timestamp(a.date) - timestamp(b.date)) ||
+      (recordedTimeFirst
+        ? timestamp(a.date) - timestamp(b.date)
+        : timestamp(a.createdAt || a.date) -
+          timestamp(b.createdAt || b.date)) ||
       a.order - b.order,
   );
 
@@ -67,7 +72,7 @@ export const buildCustomerLedger = ({ customer, sales = [], payments = [] }) => 
         };
       }),
   ];
-  const sortedEntries = sortEntries(entries);
+  const sortedEntries = sortEntries(entries, true);
   const closingBalance = roundBalance(
     Number(customer?.totalDue || 0) - Number(customer?.advanceBalance || 0),
   );
@@ -75,7 +80,16 @@ export const buildCustomerLedger = ({ customer, sales = [], payments = [] }) => 
     (total, entry) => total + entry.amount - entry.payment,
     0,
   );
-  const openingBalance = roundBalance(closingBalance - activity);
+  const inferredOpeningBalance = closingBalance - activity;
+  const storedOpeningBalance =
+    customer?.migrationReceivable ?? customer?.openingBalance;
+  const openingBalance = roundBalance(
+    storedOpeningBalance !== undefined &&
+      storedOpeningBalance !== null &&
+      Number.isFinite(Number(storedOpeningBalance))
+      ? Number(storedOpeningBalance)
+      : inferredOpeningBalance,
+  );
 
   return {
     openingBalance,
@@ -127,7 +141,7 @@ export const buildSupplierLedger = ({
         };
       }),
   ];
-  const sortedEntries = sortEntries(entries);
+  const sortedEntries = sortEntries(entries, true);
   const closingBalance = roundBalance(
     Number(supplier?.advanceBalance || 0) - Number(supplier?.totalDue || 0),
   );
@@ -135,7 +149,16 @@ export const buildSupplierLedger = ({
     (total, entry) => total + entry.payment - entry.amount,
     0,
   );
-  const openingBalance = roundBalance(closingBalance - activity);
+  const inferredOpeningBalance = closingBalance - activity;
+  const storedOpeningBalance =
+    supplier?.migrationPayable ?? supplier?.openingBalance;
+  const openingBalance = roundBalance(
+    storedOpeningBalance !== undefined &&
+      storedOpeningBalance !== null &&
+      Number.isFinite(Number(storedOpeningBalance))
+      ? -Number(storedOpeningBalance)
+      : inferredOpeningBalance,
+  );
 
   return {
     openingBalance,
