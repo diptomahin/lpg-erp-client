@@ -5,21 +5,10 @@ import PageHeader from "../../components/common/PageHeader";
 import { customerService } from "../../services/erpService";
 import { money } from "../../utils/formatters";
 import { printToPdf } from "../../utils/printToPdf";
+import { buildCustomerLedger } from "../../utils/accountLedgers";
 
 const dateText = (value) =>
   value ? new Date(value).toLocaleDateString() : "-";
-
-const roundBalance = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
-
-const withRunningBalances = (entries, openingBalance) => {
-  let balance = openingBalance;
-  return entries.map((entry) => {
-    balance = roundBalance(
-      balance + Number(entry.debit || 0) - Number(entry.credit || 0),
-    );
-    return { ...entry, balance };
-  });
-};
 
 export default function CustomerStatement() {
   const { id } = useParams();
@@ -37,61 +26,13 @@ export default function CustomerStatement() {
       </div>
     );
 
-  const { customer, ledger = [], payments = [], totals = {} } = query.data || {};
-  const statementEntries = [
-    ...ledger.map((entry, index) => ({ ...entry, order: index })),
-    ...payments
-      .filter((payment) =>
-        [
-          "advance",
-          "advance_application",
-          "advance_refund",
-          "advance_restoration",
-        ].includes(payment.paymentType),
-      )
-      .map((payment, index) => ({
-        date: payment.paymentDate,
-        description:
-          payment.paymentType === "advance_refund"
-            ? "Advance refund"
-            : payment.paymentType === "advance_application"
-              ? "Advance applied"
-              : payment.paymentType === "advance_restoration"
-                ? "Advance restored"
-                : "Advance received",
-        reference:
-          payment.sale?.invoiceNumber ||
-          payment.advanceRefundOf?.paymentNumber ||
-          payment.paymentNumber ||
-          "-",
-        debit:
-          payment.paymentType === "advance_refund"
-            ? payment.amount
-            : 0,
-        credit:
-          payment.paymentType === "advance_refund" ? 0 : payment.amount,
-        order: ledger.length + index,
-      })),
-  ].sort(
-    (a, b) =>
-      new Date(a.date) - new Date(b.date) ||
-      Number(b.debit || 0) - Number(a.debit || 0) ||
-      a.order - b.order,
-  );
+  const { customer, sales = [], payments = [], totals = {} } =
+    query.data || {};
+  const { openingBalance, closingBalance, entries: rowsWithBalances } =
+    buildCustomerLedger({ customer, sales, payments });
   const closingDue = Number(customer?.totalDue ?? totals.due ?? 0);
   const availableAdvance = Number(
     customer?.advanceBalance ?? totals.advance ?? 0,
-  );
-  const closingBalance = roundBalance(closingDue - availableAdvance);
-  const netActivity = statementEntries.reduce(
-    (balance, entry) =>
-      balance + Number(entry.debit || 0) - Number(entry.credit || 0),
-    0,
-  );
-  const openingBalance = roundBalance(closingBalance - netActivity);
-  const rowsWithBalances = withRunningBalances(
-    statementEntries,
-    openingBalance,
   );
 
   return (
@@ -169,8 +110,8 @@ export default function CustomerStatement() {
                 <th>Date</th>
                 <th>Transaction</th>
                 <th>Details</th>
-                <th>Debit</th>
-                <th>Credit</th>
+                <th>Amount</th>
+                <th>Payment</th>
                 <th>Balance</th>
               </tr>
             </thead>
@@ -192,8 +133,8 @@ export default function CustomerStatement() {
                       : entry.description}
                   </td>
                   <td>{entry.reference || "-"}</td>
-                  <td>{Number(entry.debit) ? money(entry.debit) : "-"}</td>
-                  <td>{Number(entry.credit) ? money(entry.credit) : "-"}</td>
+                  <td>{Number(entry.amount) ? money(entry.amount) : "-"}</td>
+                  <td>{Number(entry.payment) ? money(entry.payment) : "-"}</td>
                   <td>{money(entry.balance)}</td>
                 </tr>
               ))}

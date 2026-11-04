@@ -154,6 +154,10 @@ function App() {
       <ToastProvider>
         <BrowserRouter>
           <Routes>
+            <Route
+              path="/"
+              element={<Navigate to="/sales/new" replace />}
+            />
             <Route path="/login" element={<Login />} />
             <Route path="*" element={<ProtectedRoute />} />
           </Routes>

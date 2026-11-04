@@ -11,6 +11,7 @@ import PageHeader from "../../components/common/PageHeader";
 import { DataTable } from "../../components/common/DataState";
 import { customerService } from "../../services/erpService";
 import { money, kilos } from "../../utils/formatters";
+import { buildCustomerLedger } from "../../utils/accountLedgers";
 
 const dateText = (value) =>
   value ? new Date(value).toLocaleDateString() : "-";
@@ -86,6 +87,7 @@ function PaginatedTable({ rows, columns, render }) {
 
 export default function CustomerOverview({ user }) {
   const { id } = useParams();
+  const [selectedPayment, setSelectedPayment] = useState(null);
   const query = useQuery({
     queryKey: ["customer-overview", id],
     queryFn: () => customerService.overview(id),
@@ -104,9 +106,26 @@ export default function CustomerOverview({ user }) {
     customer,
     sales = [],
     payments = [],
-    ledger = [],
     totals = {},
   } = query.data || {};
+  const { openingBalance, entries: runningLedger } = buildCustomerLedger({
+    customer,
+    sales,
+    payments,
+  });
+  const ledgerRows = [
+    {
+      date: customer?.createdAt,
+      createdAt: customer?.createdAt,
+      description: "Opening Balance",
+      reference: "Balance at customer creation",
+      amount: Math.max(openingBalance, 0),
+      payment: Math.max(-openingBalance, 0),
+      balance: openingBalance,
+      isOpening: true,
+    },
+    ...runningLedger,
+  ];
 
   return (
     <>
@@ -223,7 +242,19 @@ export default function CustomerOverview({ user }) {
         render={(payment) => (
           <tr key={payment._id}>
             <td>{dateText(payment.paymentDate)}</td>
-            <td>{payment.paymentNumber || "-"}</td>
+            <td>
+              {payment.paymentNumber ? (
+                <button
+                  className="table-link"
+                  type="button"
+                  onClick={() => setSelectedPayment(payment)}
+                >
+                  {payment.paymentNumber}
+                </button>
+              ) : (
+                "-"
+              )}
+            </td>
             <td>
               {payment.paymentType === "advance_refund"
                 ? `Advance refund${payment.advanceRefundOf?.paymentNumber ? ` of ${payment.advanceRefundOf.paymentNumber}` : ""}`
@@ -231,7 +262,13 @@ export default function CustomerOverview({ user }) {
                   ? "Customer advance"
                   : payment.paymentType === "advance_restoration"
                     ? "Advance restored from voided sale"
-                    : payment.sale?.invoiceNumber || "General payment"}
+                    : payment.sale?._id ? (
+                        <Link to={`/sales/${payment.sale._id}`}>
+                          {payment.sale.invoiceNumber || "View invoice"}
+                        </Link>
+                      ) : (
+                        "General payment"
+                      )}
             </td>
             <td>{payment.paymentMethod || "cash"}</td>
             <td
@@ -254,6 +291,101 @@ export default function CustomerOverview({ user }) {
           </tr>
         )}
       />
+      {selectedPayment && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setSelectedPayment(null)}
+        >
+          <section
+            className="modal-card receipt-detail-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="receipt-detail-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="panel-title modal-head">
+              <div>
+                <p className="eyebrow">Customer payment receipt</p>
+                <h2 id="receipt-detail-title">
+                  {selectedPayment.paymentNumber || "Receipt details"}
+                </h2>
+              </div>
+              <button
+                className="icon-button"
+                type="button"
+                onClick={() => setSelectedPayment(null)}
+                aria-label="Close receipt details"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="detail-meta">
+              <div>
+                <span>Customer</span>
+                <strong>{customer?.name || "-"}</strong>
+              </div>
+              <div>
+                <span>Date</span>
+                <strong>{dateText(selectedPayment.paymentDate)}</strong>
+              </div>
+              <div>
+                <span>Payment type</span>
+                <strong>
+                  {selectedPayment.paymentType === "advance_application"
+                    ? "Advance applied"
+                    : selectedPayment.paymentType === "advance_refund"
+                      ? "Advance refund"
+                      : selectedPayment.paymentType === "advance_restoration"
+                        ? "Advance restored"
+                        : selectedPayment.paymentType === "advance"
+                          ? "Customer advance"
+                          : "Payment"}
+                </strong>
+              </div>
+              <div>
+                <span>Payment method</span>
+                <strong>{selectedPayment.paymentMethod || "cash"}</strong>
+              </div>
+              <div>
+                <span>Amount</span>
+                <strong>{money(selectedPayment.amount)}</strong>
+              </div>
+              <div>
+                <span>Related invoice</span>
+                <strong>
+                  {selectedPayment.sale?._id ? (
+                    <Link to={`/sales/${selectedPayment.sale._id}`}>
+                      {selectedPayment.sale.invoiceNumber || "View invoice"}
+                    </Link>
+                  ) : (
+                    "-"
+                  )}
+                </strong>
+              </div>
+              {selectedPayment.reference && (
+                <div>
+                  <span>Reference</span>
+                  <strong>{selectedPayment.reference}</strong>
+                </div>
+              )}
+              {selectedPayment.notes && (
+                <div>
+                  <span>Notes</span>
+                  <strong>{selectedPayment.notes}</strong>
+                </div>
+              )}
+              {selectedPayment.advanceRefundOf?.paymentNumber && (
+                <div>
+                  <span>Refund of receipt</span>
+                  <strong>
+                    {selectedPayment.advanceRefundOf.paymentNumber}
+                  </strong>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
 
       <div className="section-heading">
         <div>
@@ -262,13 +394,13 @@ export default function CustomerOverview({ user }) {
         </div>
       </div>
       <PaginatedTable
-        rows={ledger}
+        rows={ledgerRows}
         columns={[
           "Date",
           "Description",
           "Reference",
-          "Debit",
-          "Credit",
+          "Amount",
+          "Payment",
           "Balance",
         ]}
         render={(entry, index) => (
@@ -276,8 +408,8 @@ export default function CustomerOverview({ user }) {
             <td>{dateText(entry.date)}</td>
             <td>{entry.description}</td>
             <td>{entry.reference || "-"}</td>
-            <td>{money(entry.debit)}</td>
-            <td>{money(entry.credit)}</td>
+            <td>{entry.amount ? money(entry.amount) : "-"}</td>
+            <td>{entry.payment ? money(entry.payment) : "-"}</td>
             <td className="strong">{money(entry.balance)}</td>
           </tr>
         )}

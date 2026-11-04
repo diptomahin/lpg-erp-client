@@ -731,6 +731,19 @@ td {
 td a {
   color: var(--green);
 }
+.table-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--green);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.receipt-detail-modal .detail-meta {
+  margin-top: 16px;
+}
 .badge {
   display: inline-flex;
   padding: 5px 8px;
@@ -1437,6 +1450,9 @@ select {
   }
   .statement-table thead {
     display: table-header-group;
+  }
+  .statement-table tfoot {
+    display: table-row-group;
   }
   .statement-table tr {
     break-inside: avoid;

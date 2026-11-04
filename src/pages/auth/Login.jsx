@@ -27,7 +27,7 @@ export default function Login() {
       localStorage.setItem("lpg_user", JSON.stringify(data.user || null));
       window.dispatchEvent(new Event("storage"));
       showToast("Signed in successfully.");
-      navigate("/dashboard", { replace: true });
+      navigate("/sales/new", { replace: true });
     },
     onError: (err) => setError(apiError(err)),
   });

@@ -5,6 +5,7 @@ import PageHeader from "../../components/common/PageHeader";
 import { DataTable } from "../../components/common/DataState";
 import { supplierService } from "../../services/erpService";
 import { kilos, money } from "../../utils/formatters";
+import { buildSupplierLedger } from "../../utils/accountLedgers";
 
 const dateText = (value) =>
   value ? new Date(value).toLocaleDateString() : "-";
@@ -29,9 +30,25 @@ export default function SupplierOverview() {
     supplier,
     purchases = [],
     payments = [],
-    ledger = [],
     totals = {},
   } = query.data || {};
+  const { openingBalance, entries: runningLedger } = buildSupplierLedger({
+    supplier,
+    purchases,
+    payments,
+  });
+  const ledgerRows = [
+    {
+      date: supplier?.createdAt,
+      createdAt: supplier?.createdAt,
+      description: "Opening Balance",
+      reference: "Balance at supplier creation",
+      amount: Math.max(-openingBalance, 0),
+      payment: Math.max(openingBalance, 0),
+      balance: openingBalance,
+    },
+    ...runningLedger,
+  ];
 
   return (
     <>
@@ -153,13 +170,13 @@ export default function SupplierOverview() {
         </div>
       </div>
       <DataTable
-        rows={ledger}
+        rows={ledgerRows}
         columns={[
           "Date",
           "Description",
           "Reference",
-          "Debit",
-          "Credit",
+          "Amount",
+          "Payment",
           "Balance",
         ]}
         render={(entry, index) => (
@@ -167,8 +184,8 @@ export default function SupplierOverview() {
             <td>{dateText(entry.date)}</td>
             <td>{entry.description}</td>
             <td>{entry.reference || "-"}</td>
-            <td>{money(entry.debit)}</td>
-            <td>{money(entry.credit)}</td>
+            <td>{entry.amount ? money(entry.amount) : "-"}</td>
+            <td>{entry.payment ? money(entry.payment) : "-"}</td>
             <td className="strong">{money(entry.balance)}</td>
           </tr>
         )}

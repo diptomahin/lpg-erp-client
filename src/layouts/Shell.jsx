@@ -44,7 +44,7 @@ export default function Shell({ user, logout, routes }) {
     <div className="app-shell">
       <aside className={`sidebar ${open ? "open" : ""}`}>
         <div className="sidebar-head">
-          <Link className="wordmark business-wordmark" to="/dashboard">
+          <Link className="wordmark business-wordmark" to="/sales/new">
             Al-Aksha <span>Traders</span>
           </Link>
           <button

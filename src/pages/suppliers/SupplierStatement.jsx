@@ -5,21 +5,10 @@ import PageHeader from "../../components/common/PageHeader";
 import { supplierService } from "../../services/erpService";
 import { money } from "../../utils/formatters";
 import { printToPdf } from "../../utils/printToPdf";
+import { buildSupplierLedger } from "../../utils/accountLedgers";
 
 const dateText = (value) =>
   value ? new Date(value).toLocaleDateString() : "-";
-
-const roundBalance = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
-
-const withRunningBalances = (entries, openingBalance) => {
-  let balance = openingBalance;
-  return entries.map((entry) => {
-    balance = roundBalance(
-      balance + Number(entry.debit || 0) - Number(entry.credit || 0),
-    );
-    return { ...entry, balance };
-  });
-};
 
 export default function SupplierStatement() {
   const { id } = useParams();
@@ -37,46 +26,17 @@ export default function SupplierStatement() {
       </div>
     );
 
-  const { supplier, ledger = [], payments = [], totals = {} } = query.data || {};
-  const statementEntries = [
-    ...ledger.map((entry, index) => ({ ...entry, order: index })),
-    ...payments
-      .filter((payment) => payment.paymentType === "advance")
-      .map((payment, index) => ({
-        date: payment.paymentDate,
-        description: "Advance paid",
-        reference: payment.paymentNumber || "-",
-        debit: 0,
-        credit: payment.amount,
-        order: ledger.length + index,
-      })),
-  ].sort(
-    (a, b) =>
-      new Date(a.date) - new Date(b.date) ||
-      Number(b.debit || 0) - Number(a.debit || 0) ||
-      a.order - b.order,
-  );
+  const { supplier, purchases = [], payments = [], totals = {} } =
+    query.data || {};
+  const { openingBalance, closingBalance, entries: rowsWithBalances } =
+    buildSupplierLedger({ supplier, purchases, payments });
   const closingPayable = Number(supplier?.totalDue ?? totals.payable ?? 0);
   const availableAdvance = Number(
     supplier?.advanceBalance ?? totals.advance ?? 0,
   );
-  const closingBalance = roundBalance(closingPayable - availableAdvance);
   const paymentsMade = payments
-    .filter(
-      (payment) =>
-        !["advance", "advance_application"].includes(payment.paymentType),
-    )
+    .filter((payment) => payment.paymentType !== "advance_application")
     .reduce((total, payment) => total + Number(payment.amount || 0), 0);
-  const netActivity = statementEntries.reduce(
-    (balance, entry) =>
-      balance + Number(entry.debit || 0) - Number(entry.credit || 0),
-    0,
-  );
-  const openingBalance = roundBalance(closingBalance - netActivity);
-  const rowsWithBalances = withRunningBalances(
-    statementEntries,
-    openingBalance,
-  );
 
   return (
     <>
@@ -138,10 +98,10 @@ export default function SupplierStatement() {
             </div>
             <div>
               <dt>Available Advance</dt>
-              <dd>{`-${money(availableAdvance)}`}</dd>
+              <dd>{money(availableAdvance)}</dd>
             </div>
             <div className="statement-balance-due">
-              <dt>Net Balance (Payable / Advance)</dt>
+              <dt>Net Balance (Advance / Payable)</dt>
               <dd>{money(closingBalance)}</dd>
             </div>
           </dl>
@@ -154,8 +114,8 @@ export default function SupplierStatement() {
                 <th>Date</th>
                 <th>Transaction</th>
                 <th>Details</th>
-                <th>Debit</th>
-                <th>Credit</th>
+                <th>Amount</th>
+                <th>Payment</th>
                 <th>Balance</th>
               </tr>
             </thead>
@@ -164,8 +124,8 @@ export default function SupplierStatement() {
                 <td>{dateText(supplier?.createdAt)}</td>
                 <td>Opening Balance</td>
                 <td>Balance at supplier creation</td>
-                <td>{openingBalance > 0 ? money(openingBalance) : "-"}</td>
                 <td>{openingBalance < 0 ? money(-openingBalance) : "-"}</td>
+                <td>{openingBalance > 0 ? money(openingBalance) : "-"}</td>
                 <td>{money(openingBalance)}</td>
               </tr>
               {rowsWithBalances.map((entry, index) => (
@@ -173,8 +133,8 @@ export default function SupplierStatement() {
                   <td>{dateText(entry.date)}</td>
                   <td>{entry.description}</td>
                   <td>{entry.reference || "-"}</td>
-                  <td>{Number(entry.debit) ? money(entry.debit) : "-"}</td>
-                  <td>{Number(entry.credit) ? money(entry.credit) : "-"}</td>
+                  <td>{Number(entry.amount) ? money(entry.amount) : "-"}</td>
+                  <td>{Number(entry.payment) ? money(entry.payment) : "-"}</td>
                   <td>{money(entry.balance)}</td>
                 </tr>
               ))}
@@ -182,14 +142,14 @@ export default function SupplierStatement() {
             <tfoot>
               <tr>
                 <td colSpan="5">Balance Payable</td>
-                <td>{money(closingPayable)}</td>
+                <td>{`-${money(closingPayable)}`}</td>
               </tr>
               <tr>
                 <td colSpan="5">Available Advance</td>
-                <td>{`-${money(availableAdvance)}`}</td>
+                <td>{money(availableAdvance)}</td>
               </tr>
               <tr>
-                <td colSpan="5">Net Balance (Payable / Advance)</td>
+                <td colSpan="5">Net Balance (Advance / Payable)</td>
                 <td>{money(closingBalance)}</td>
               </tr>
             </tfoot>
